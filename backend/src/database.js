@@ -1,8 +1,10 @@
 import mongoose from "mongoose";
+import dotenv from "dotenv";
 
-mongoose.connect("mongodb://localhost:27017/nextclass_db")
+dotenv.config();
 
-.then (()=> console.log("DB Connected"))
-.catch((err)=>console.error(err));
+mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log("DB Connected"))
+    .catch((err) => console.error("Error de conexión:", err));
 
 export default mongoose;
