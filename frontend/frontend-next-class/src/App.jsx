@@ -1,21 +1,17 @@
-import React from 'react';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import 'bootstrap/dist/js/bootstrap.bundle.min.js';
-
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Login from './pages/Login';
-import Register from './pages/Register';
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import LoginForm from "./components/loginForm";
+import RegisterForm from "./components/registerForm";
 
 function App() {
   return (
-    <BrowserRouter>
+    <Router>
       <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route path="/" element={<LoginForm />} />
+        <Route path="/register" element={<RegisterForm />} />
       </Routes>
-    </BrowserRouter>
+    </Router>
   );
 }
 
 export default App;
-
