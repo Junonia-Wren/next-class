@@ -47,7 +47,7 @@ authControllers.login = (req, res) => {
                 });
             }
 
-            // ✅ Aquí agregamos la matrícula al payload del token
+            
             const token = jwt.sign(
                 {
                     matricula: user.matricula,
@@ -67,7 +67,8 @@ authControllers.login = (req, res) => {
         .catch((error) => {
             res.status(500).json({
                 message: "Error al iniciar sesión",
-                error: error
+                error: error.msg
+    
             });
         });
 };
