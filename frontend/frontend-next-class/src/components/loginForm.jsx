@@ -37,7 +37,7 @@ function LoginForm() {
             setSuccess("Inicio de sesión exitoso");
 
             if (response.data.token) {
-                localStorage.setItem("token", response.data.token);
+                localStorage.setItem("authToken", response.data.token);
             }
 
             navigate("/dashboard");

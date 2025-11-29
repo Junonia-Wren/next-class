@@ -1,15 +1,13 @@
-import axios from 'axios';
+import api from "./axiosConfig";
 
-const URL_BASE_API = "http://localhost:3000/api/auth";
+const userServices = {
+    register(dataUser) {
+        return api.post("/auth/register", dataUser);
+    },
 
-const userServices ={
-
-    register(dataUser){
-        return axios.post(URL_BASE_API + "/register", dataUser);
-    }, 
-    login(dataUser){
-        return axios.post(URL_BASE_API + "/login", dataUser);
+    login(dataUser) {
+        return api.post("/auth/login", dataUser);
     }
-}
+};
 
 export default userServices;
