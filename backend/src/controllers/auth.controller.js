@@ -47,7 +47,16 @@ authControllers.login = (req, res) => {
                 });
             }
 
-            const token = jwt.sign({ id: user._id, role: user.role }, SECRET, { expiresIn: "1d" });
+            // ✅ Aquí agregamos la matrícula al payload del token
+            const token = jwt.sign(
+                {
+                    matricula: user.matricula,
+                    role: user.role,
+                    grupo: user.grupo // opcional, si lo tienes en el modelo
+                },
+                SECRET,
+                { expiresIn: "1d" }
+            );
 
             res.json({
                 message: "Login exitoso",

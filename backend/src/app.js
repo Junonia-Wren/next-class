@@ -6,7 +6,7 @@ import "./database.js";
 import scheduleRoutes from "./routes/schedule.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
-
+import taskRoutes from "./routes/task.routes.js"
 const app = express();
 
 app.set("port", process.env.PORT || 3000);
@@ -20,6 +20,7 @@ app.use(cors());
 app.use("/api/schedules", scheduleRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/tasks", taskRoutes);
 
 
 export default app; 
