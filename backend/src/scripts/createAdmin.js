@@ -6,7 +6,7 @@ import mongoose from "mongoose";
 
 const createAdmin = async () => {
     try {
-     
+
 
         const existing = await User.findOne({ matricula: "ADMIN001" });
         if (existing) {
@@ -18,8 +18,10 @@ const createAdmin = async () => {
             matricula: "ADMIN001",
             name: "Administrador",
             password: "admin123",
+            area: "N/A",
             role: "admin",
             grupo: "N/A",
+            nivel: "N/A",
             carrera: "ADMIN",
             grado: "ADMIN"
         });
@@ -32,4 +34,4 @@ const createAdmin = async () => {
     }
 };
 
-createAdmin();
+export default createAdmin();
