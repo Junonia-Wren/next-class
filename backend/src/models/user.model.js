@@ -8,23 +8,13 @@ const userSchema = new Schema({
     password: { type: String, required: true },
     role: {
         type: String,
-        enum: ["admin", "jefe_grupo", "alumno"],
+        enum: ["admin", "jefe_grupo", "alumno", "teacher"],
         default: "alumno"
     },
-    area: {
-        type: String,
-        enum: ["DSM", "EVND", "N/A"],
-        required: true
-    },
-    nivel: {
-        type: String,
-        enum: ["Técnico", "Ingeniería", "N/A"],
-        required: true
-    },
-    grupo: {
-        type: String,
-        enum: ["1A", "1B", "2A","2B", "3A","3B", "4A", "4B","5A","5B", "6A","6B","8A","8B", "9A","9B","10A","10B", "N/A" ],
-        required: true
+    group: {
+        type: Schema.Types.ObjectId,
+        ref: "Group",
+        default: null
     }
 
 });

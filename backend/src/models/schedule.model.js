@@ -1,38 +1,37 @@
 import { model, Schema } from "mongoose";
 
 const scheduleSchema = new Schema({
-    schedule_id: {
-        type: String,
-        required: true,
-        unique: true
-    },
-    area: {
-        type: String,
-        enum: ["DSM", "EVND"],
+    group: {
+        type: Schema.Types.ObjectId,
+        ref: "Group",
         required: true
     },
-    nivel: {
-        type: String,
-        enum: ["Técnico", "Ingeniería"],
+
+    subject: {
+        type: Schema.Types.ObjectId,
+        ref: "Subject",
         required: true
     },
-    grupo: {
-        type: String,
+
+    teacher: {
+        type: Schema.Types.ObjectId,
+        ref: "User",
         required: true
     },
-    subject: String,
-    teacher: String,
-    classroom: String,
+
     day: {
         type: String,
-        enum: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"]
+        enum: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+        required: true
     },
-    startTime: String,
-    endTime: String,
-    roomImage: String
+
+    classroom: { type: String },
+    startTime: { type: String },
+    endTime: { type: String },
+    roomImage: { type: String }
 }, {
     versionKey: false,
     timestamps: true
 });
 
-export default model("schedule", scheduleSchema);
+export default model("Schedule", scheduleSchema);
