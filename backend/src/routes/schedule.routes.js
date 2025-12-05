@@ -7,7 +7,7 @@ const router = Router();
 //  RUTAS LIBRES (consulta)
 router.get('/getAll', scheduleControllers.getAll);
 router.get('/getOne/:schedule_id', scheduleControllers.getOne);
-router.get('/getByGrupo', scheduleControllers.getByGrupo); // ← NUEVA RUTA
+router.get('/getByGrupoName', scheduleControllers.getByGrupoName);
 router.get('/getHorarioAlumno/:matricula', scheduleControllers.getHorarioAlumno);
 
 // RUTAS PROTEGIDAS (solo admin puede modificar)

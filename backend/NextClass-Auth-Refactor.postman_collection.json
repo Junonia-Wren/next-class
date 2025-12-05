@@ -1,82 +1,308 @@
 {
   "info": {
-    "name": "NextClass - Auth Refactor",
-    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-123456789000",
-    "description": "Colección de autenticación refactorizada con guardado automático de JWT",
+    "name": "NextClass - Auth + Admin + Schedule",
+    "_postman_id": "c8f13ff0-9e55-4c92-af12-7b8c90801c77",
+    "description": "Colección completa con rutas AUTH, ADMIN y SCHEDULE completamente refactorizadas.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
+
   "variable": [
     {
       "key": "jwtToken",
       "value": ""
     }
   ],
+
   "item": [
     {
-      "name": "Register (Student)",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n    \"matricula\": \"20250001\",\n    \"name\": \"Juan Perez\",\n    \"password\": \"123456\",\n    \"group\": \"ID_DEL_GRUPO\"\n}"
-        },
-        "url": {
-          "raw": "http://localhost:3000/api/auth/register",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "3000",
-          "path": ["api", "auth", "register"]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Login",
-      "event": [
+      "name": "Auth",
+      "item": [
         {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "let json = pm.response.json();",
-              "",
-              "if (json.token) {",
-              "    pm.collectionVariables.set(\"jwtToken\", json.token);",
-              "    console.log(\"Token guardado\", json.token);",
-              "} else {",
-              "    console.log(\"No se recibió token.\");",
-              "}"
+          "name": "Register (Student)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
             ],
-            "type": "text/javascript"
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"matricula\": \"20250001\",\n  \"name\": \"Juan Perez\",\n  \"password\": \"123456\",\n  \"group\": \"ID_DEL_GRUPO\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/auth/register",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "auth", "register"]
+            }
           }
-        }
-      ],
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n    \"matricula\": \"20250001\",\n    \"password\": \"123456\"\n}"
         },
-        "url": {
-          "raw": "http://localhost:3000/api/auth/login",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "3000",
-          "path": ["api", "auth", "login"]
+
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let json = pm.response.json();",
+                  "if (json.token) {",
+                  "    pm.collectionVariables.set('jwtToken', json.token);",
+                  "    console.log('Token guardado: ', json.token);",
+                  "} else {",
+                  "    console.log('No se recibió token.');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"matricula\": \"20250001\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/auth/login",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "auth", "login"]
+            }
+          }
         }
-      },
-      "response": []
+      ]
+    },
+
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Get All Group Leaders",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwtToken}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:3000/api/admin/getAllLeaders",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "admin", "getAllLeaders"]
+            }
+          }
+        },
+
+        {
+          "name": "Get Leader By Group (name)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwtToken}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:3000/api/admin/getLeaderByGrupo/5A",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "admin", "getLeaderByGrupo", "5A"]
+            }
+          }
+        },
+
+        {
+          "name": "Assign Group Leader",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwtToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"matricula\": \"20250001\",\n  \"group\": \"5A\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/admin/asignarJefe",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "admin", "asignarJefe"]
+            }
+          }
+        },
+
+        {
+          "name": "Update Group Leader",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwtToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nuevo Nombre\",\n  \"group\": \"6B\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/admin/updateJefe/20250001",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "admin", "updateJefe", "20250001"]
+            }
+          }
+        },
+
+        {
+          "name": "Delete Group Leader",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwtToken}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:3000/api/admin/deleteJefe/20250001",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "admin", "deleteJefe", "20250001"]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Schedule",
+      "item": [
+
+        {
+          "name": "Get All Schedules",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:3000/api/schedules/getAll",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "schedules", "getAll"]
+            }
+          }
+        },
+
+        {
+          "name": "Get One by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:3000/api/schedules/getOne/ID_DEL_HORARIO",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "schedules", "getOne", "ID_DEL_HORARIO"]
+            }
+          }
+        },
+
+        {
+          "name": "Get By Group Name (5A)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:3000/api/schedules/getByGrupoName?name=5A",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "schedules", "getByGrupoName"],
+              "query": [
+                { "key": "name", "value": "5A" }
+              ]
+            }
+          }
+        },
+
+        {
+          "name": "Get Horario Alumno",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:3000/api/schedules/getHorarioAlumno/20250001",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "schedules", "getHorarioAlumno", "20250001"]
+            }
+          }
+        },
+
+        {
+          "name": "Insert Schedule (Admin Only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwtToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"group\": \"ID_GRUPO\",\n  \"subject\": \"ID_MATERIA\",\n  \"teacher\": \"ID_PROFESOR\",\n  \"day\": \"Monday\",\n  \"startTime\": \"08:00\",\n  \"endTime\": \"09:00\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/schedules/insertSchedule",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "schedules", "insertSchedule"]
+            }
+          }
+        },
+
+        {
+          "name": "Update Schedule",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwtToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"day\": \"Tuesday\",\n  \"startTime\": \"10:00\",\n  \"endTime\": \"11:00\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/schedules/updateSchedule/ID_DEL_HORARIO",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "schedules", "updateSchedule", "ID_DEL_HORARIO"]
+            }
+          }
+        },
+
+        {
+          "name": "Delete Schedule",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwtToken}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:3000/api/schedules/deleteSchedule/ID_DEL_HORARIO",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "schedules", "deleteSchedule", "ID_DEL_HORARIO"]
+            }
+          }
+        }
+
+      ]
     }
   ]
 }

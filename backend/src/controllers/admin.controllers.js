@@ -39,7 +39,7 @@ adminControllers.asignarJefeGrupo = (req, res) => {
                     jefe: existingLeader
                 });
             } else {
-                userDaos.updateRoleByMatricula(matricula, "jefe_grupo")
+                userDaos.updateRoleByMatricula(matricula, "group_leader")
                     .then((updatedUser) => {
                         if (updatedUser) {
                             res.status(200).json({

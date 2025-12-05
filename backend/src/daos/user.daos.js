@@ -1,49 +1,53 @@
-import {User} from "../models/index.models.js";
+import { User, Group } from "../models/index.models.js";
 
 const userDaos = {};
 
+// Crear usuario
 userDaos.create = async (data) => {
-    const newUser = await User.create(data);
-    return newUser;
+    return await User.create(data);
 };
-
 
 // Obtener todos los jefes de grupo
 userDaos.getAllGroupLeaders = async () => {
-    const leaders = await User.find({ role: "group_leader" });
-    return leaders;
+    return await User.find({ role: "group_leader" }).populate("group");
 };
 
-// Obtener jefe de grupo por grupo, nivel, area
-userDaos.getGroupLeaderByGrupo = async (area, nivel, grupo) => {
-    const leader = await User.findOne({ group: groupId, role: "group_leader" })
-    return leader;
+// Obtener jefe por nombre del grupo (ej. "5A")
+userDaos.getGroupLeaderByGrupo = async (groupName) => {
+    const group = await Group.findOne({ name: groupName });
+    if (!group) return null;
+
+    return await User.findOne({ group: group._id, role: "group_leader" }).populate("group");
 };
 
-// Asignar o eliminar jefe (actualiza el rol)
+// Asignar rol
 userDaos.updateRoleByMatricula = async (matricula, role) => {
-    const updatedUser = await User.findOneAndUpdate(
-        { matricula: matricula },
-        { role: role },
+    return await User.findOneAndUpdate(
+        { matricula },
+        { role },
         { new: true }
-    );
-    return updatedUser;
+    ).populate("group");
 };
 
-// Actualizar datos del jefe (nombre, grupo, carrera, etc.)
+// Actualizar datos
 userDaos.updateOne = async (matricula, data) => {
-    const updatedUser = await User.findOneAndUpdate(
-        { matricula: matricula },
+
+    // Si está cambiando el grupo por nombre ("5A")
+    if (data.group) {
+        const group = await Group.findOne({ name: data.group });
+        data.group = group ? group._id : null;
+    }
+
+    return await User.findOneAndUpdate(
+        { matricula },
         data,
         { new: true }
-    );
-    return updatedUser;
+    ).populate("group");
 };
 
-// Buscar usuario por matrícula
+// Buscar usuario
 userDaos.getByMatricula = async (matricula) => {
-    const user = await User.findOne({ matricula: matricula });
-    return user;
+    return await User.findOne({ matricula }).populate("group");
 };
 
 export default userDaos;
