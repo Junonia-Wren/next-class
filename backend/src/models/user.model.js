@@ -1,44 +1,42 @@
 import { model, Schema } from "mongoose";
 import bcrypt from "bcryptjs";
 
-const userSchema = new Schema({
-
+const userSchema = new Schema(
+  {
     matricula: { type: String, required: true, unique: true },
-    name: { type: String },
+
+    name: { type: String, required: true },
+
     password: { type: String, required: true },
+
     role: {
-        type: String,
-        enum: ["admin", "jefe_grupo", "alumno"],
-        default: "alumno"
+      type: String,
+      enum: ["admin", "group_leader", "student", "teacher"],
+      default: "student",
     },
-    area: {
-        type: String,
-        enum: ["DSM", "EVND", "N/A"],
-        required: true
-    },
-    nivel: {
-        type: String,
-        enum: ["Técnico", "Ingeniería", "N/A"],
-        required: true
-    },
-    grupo: {
-        type: String,
-        enum: ["1A", "1B", "2A","2B", "3A","3B", "4A", "4B","5A","5B", "6A","6B","8A","8B", "9A","9B","10A","10B", "N/A" ],
-        required: true
-    }
 
-});
+    group: {
+      type: Schema.Types.ObjectId,
+      ref: "Group",
+      default: null,
+    },
+  },
+  { timestamps: true }
+);
 
-//Encriptar contraseña
+// Encrypt password
 userSchema.pre("save", async function (next) {
-    if (!this.isModified("password")) return next();
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
+  if (!this.isModified("password")) return next();
+
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+
+  next();
 });
-// Comparar contraseñas:
+
+// Compare password
 userSchema.methods.comparePassword = function (candidatePassword) {
-    return bcrypt.compare(candidatePassword, this.password);
+  return bcrypt.compare(candidatePassword, this.password);
 };
 
 export default model("User", userSchema);

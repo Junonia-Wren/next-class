@@ -1,9 +1,6 @@
-import User from "../models/user.model.js";
+import {User} from "../models/index.models.js";
 
 const userDaos = {};
-
-
-
 
 userDaos.create = async (data) => {
     const newUser = await User.create(data);

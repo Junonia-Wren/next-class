@@ -1,5 +1,4 @@
-import Task from "../models/task.model.js"
-
+import {Task} from "../models/index.models.js";
 const taskDaos = {};
 
 // Obtener todas las tareas

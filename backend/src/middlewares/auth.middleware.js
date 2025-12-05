@@ -25,7 +25,7 @@ export const isAdmin = (req, res, next) => {
 };
 
 export const isJefeGrupo = (req, res, next) => {
-    if (req.user.role !== "jefe_grupo") {
+    if (req.user.role !== "group_leader") {
         return res.status(403).json({ message: "Acceso denegado: solo jefes de grupo" });
     }
     next();
