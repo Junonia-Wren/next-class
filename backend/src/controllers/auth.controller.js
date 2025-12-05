@@ -4,73 +4,72 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+const SECRET = process.env.JWT_SECRET;
 const authControllers = {};
 
-const SECRET = process.env.JWT_SECRET; // puedes mover esto a .env
+// Registro (solo alumnos)
+authControllers.register = async (req, res) => {
+    try {
+        const data = req.body;
 
-// Registro libre de usuario (alumno)
-authControllers.register = (req, res) => {
-    const data = req.body;
-    data.role = "alumno"; // fuerza el rol por seguridad
+        // Forzar rol seguro
+        data.role = "student";
 
-    userDaos.create(data)
-        .then((newUser) => {
-            res.status(201).json({
-                message: "Usuario registrado correctamente",
-                data: newUser
-            });
-        })
-        .catch((error) => {
-            res.status(400).json({
-                message: "Error al registrar usuario",
-                error: error
-            });
+        const newUser = await userDaos.create(data);
+
+        return res.status(201).json({
+            message: "Usuario registrado correctamente",
+            data: newUser
         });
+
+    } catch (error) {
+        return res.status(400).json({
+            message: "Error al registrar usuario",
+            error
+        });
+    }
 };
 
-// Login de usuario
-authControllers.login = (req, res) => {
-    const { matricula, password } = req.body;
+// Login
+authControllers.login = async (req, res) => {
+    try {
+        const { matricula, password } = req.body;
 
-    userDaos.getByMatricula(matricula)
-        .then(async (user) => {
-            if (!user) {
-                return res.status(404).json({
-                    message: "Usuario no encontrado"
-                });
-            }
+        const user = await userDaos.getByMatricula(matricula);
+        if (!user) {
+            return res.status(404).json({ message: "Usuario no encontrado" });
+        }
 
-            const match = await user.comparePassword(password);
-            if (!match) {
-                return res.status(401).json({
-                    message: "Contraseña incorrecta"
-                });
-            }
+        const match = await user.comparePassword(password);
+        if (!match) {
+            return res.status(401).json({ message: "Contraseña incorrecta" });
+        }
 
-            
-            const token = jwt.sign(
-                {
-                    matricula: user.matricula,
-                    role: user.role,
-                    grupo: user.grupo // opcional, si lo tienes en el modelo
-                },
-                SECRET,
-                { expiresIn: "1d" }
-            );
+        // Token limpio con IDs correctos
+        const token = jwt.sign(
+            {
+                uid: user._id,
+                matricula: user.matricula,
+                role: user.role,
+                group: user.group ? user.group.toString() : null,
+            },
+            SECRET,
+            { expiresIn: "1d" }
+        );
 
-            res.json({
-                message: "Login exitoso",
-                token: token,
-                role: user.role
-            });
-        })
-        .catch((error) => {
-            res.status(500).json({
-                message: "Error al iniciar sesión",
-                error: error.msg
-    
-            });
+
+        return res.json({
+            message: "Login exitoso",
+            token,
+            role: user.role
         });
+
+    } catch (error) {
+        return res.status(500).json({
+            message: "Error al iniciar sesión",
+            error: error.message
+        });
+    }
 };
 
 export default authControllers;

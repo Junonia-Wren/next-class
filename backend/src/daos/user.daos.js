@@ -10,18 +10,13 @@ userDaos.create = async (data) => {
 
 // Obtener todos los jefes de grupo
 userDaos.getAllGroupLeaders = async () => {
-    const leaders = await User.find({ role: "jefe_grupo" });
+    const leaders = await User.find({ role: "group_leader" });
     return leaders;
 };
 
 // Obtener jefe de grupo por grupo, nivel, area
 userDaos.getGroupLeaderByGrupo = async (area, nivel, grupo) => {
-    const leader = await User.findOne({
-        area: area,
-        nivel: nivel,
-        grupo: grupo,
-        role: "jefe_grupo"
-    });
+    const leader = await User.findOne({ group: groupId, role: "group_leader" })
     return leader;
 };
 
