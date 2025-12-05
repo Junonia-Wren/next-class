@@ -1,8 +1,8 @@
 {
   "info": {
-    "name": "NextClass - Auth + Admin + Schedule",
+    "name": "NextClass - Auth + Admin + Schedule + Tasks",
     "_postman_id": "c8f13ff0-9e55-4c92-af12-7b8c90801c77",
-    "description": "Colección completa con rutas AUTH, ADMIN y SCHEDULE completamente refactorizadas.",
+    "description": "Colección completa con rutas AUTH, ADMIN, SCHEDULE y TASKS completamente refactorizadas.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
 
@@ -77,7 +77,6 @@
         }
       ]
     },
-
     {
       "name": "Admin",
       "item": [
@@ -177,7 +176,6 @@
         }
       ]
     },
-
     {
       "name": "Schedule",
       "item": [
@@ -197,7 +195,7 @@
         },
 
         {
-          "name": "Get One by ID",
+          "name": "Get One Schedule",
           "request": {
             "method": "GET",
             "url": {
@@ -211,7 +209,7 @@
         },
 
         {
-          "name": "Get By Group Name (5A)",
+          "name": "Get By Group Name",
           "request": {
             "method": "GET",
             "url": {
@@ -242,7 +240,7 @@
         },
 
         {
-          "name": "Insert Schedule (Admin Only)",
+          "name": "Insert Schedule (Admin)",
           "request": {
             "method": "POST",
             "header": [
@@ -301,8 +299,137 @@
             }
           }
         }
+      ]
+    },
+    {
+      "name": "Tasks",
+      "item": [
+
+        {
+          "name": "Get All Tasks",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:3000/api/tasks/getAll",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "tasks", "getAll"]
+            }
+          }
+        },
+
+        {
+          "name": "Get Task by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:3000/api/tasks/getOne/ID_TAREA",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "tasks", "getOne", "ID_TAREA"]
+            }
+          }
+        },
+
+        {
+          "name": "Get Tasks By Group (name)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:3000/api/tasks/getByGrupo?grupo=5A",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "tasks", "getByGrupo"],
+              "query": [
+                { "key": "grupo", "value": "5A" }
+              ]
+            }
+          }
+        },
+
+        {
+          "name": "Insert Task (Group Leader Only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwtToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Resolver ejercicios\",\n  \"description\": \"Páginas 20-21\",\n  \"subject\": \"ID_MATERIA\",\n  \"deadline\": \"2025-12-10\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/tasks/insertTask",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "tasks", "insertTask"]
+            }
+          }
+        },
+
+        {
+          "name": "Update Task",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwtToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Tarea modificada\",\n  \"deadline\": \"2025-12-15\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/tasks/updateTask/ID_TAREA",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "tasks", "updateTask", "ID_TAREA"]
+            }
+          }
+        },
+
+        {
+          "name": "Delete Task",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwtToken}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:3000/api/tasks/deleteTask/ID_TAREA",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "tasks", "deleteTask", "ID_TAREA"]
+            }
+          }
+        },
+
+        {
+          "name": "Mark Task Completed (Student)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwtToken}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:3000/api/tasks/markCompleted/ID_TAREA",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "tasks", "markCompleted", "ID_TAREA"]
+            }
+          }
+        }
 
       ]
     }
+
   ]
 }
