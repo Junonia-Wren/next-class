@@ -14,31 +14,52 @@ export default function RegisterForm() {
         grupo: "",
     });
 
-    const colorPrincipal = "#00B8C8";
+    // 🎨 Paleta del Admin Panel
+    const colors = {
+        primary: "#00B8C8",
+        secondary: "#007E8C",
+        darkTeal: "#00838F",
+        bgLight: "#F5F8FA",
+        textDark: "#3333",
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        console.log("Datos del formulario", formData);
-        const response = await userServices.register(formData);
-        console.log(response);
+const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    // Solo los campos que tu backend acepta (matricula, name, password)
+    const payload = {
+        matricula: formData.matricula,
+        name: formData.name,
+        password: formData.password
     };
+
+    try {
+        const response = await userServices.register(payload);
+        console.log("Usuario registrado:", response.data);
+        alert("Registro exitoso");
+    } catch (error) {
+        console.error("Error en registro:", error);
+        alert("Error al registrar usuario");
+    }
+};
+
 
     return (
         <div
             className="d-flex flex-column align-items-center justify-content-start min-vh-100"
             style={{
                 position: "relative",
-                backgroundColor: "#f5f8fa",
+                backgroundColor: colors.bgLight,
                 overflow: "hidden",
                 fontFamily: "Poppins, sans-serif",
             }}
         >
-            {/* Fondo azul */}
+            {/* FONDO SUPERIOR */}
             <div
                 style={{
                     position: "absolute",
@@ -47,14 +68,14 @@ export default function RegisterForm() {
                     width: "100%",
                     height: "75vh",
                     minHeight: "480px",
-                    backgroundColor: colorPrincipal,
+                    backgroundColor: colors.darkTeal,
                     borderBottomLeftRadius: "60px",
                     borderBottomRightRadius: "60px",
                     zIndex: 1,
                 }}
-            ></div>
+            />
 
-            {/* Logo */}
+            {/* LOGO PRINCIPAL */}
             <img
                 src={Logoprincipal}
                 alt="Logo principal"
@@ -67,7 +88,7 @@ export default function RegisterForm() {
                 }}
             />
 
-            {/* Tarjeta principal */}
+            {/* TARJETA */}
             <div
                 style={{
                     position: "relative",
@@ -76,12 +97,12 @@ export default function RegisterForm() {
                     width: "90%",
                     maxWidth: "450px",
                     borderRadius: "25px",
-                    boxShadow: "0 10px 25px rgba(0,0,0,0.25)",
+                    boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
                     padding: "2.5rem 1.8rem",
                     marginTop: "2.5rem",
                 }}
             >
-                {/* Mini logo flotante */}
+                {/* GARrita decorativa */}
                 <img
                     src={garra}
                     alt="Mini logo"
@@ -90,12 +111,11 @@ export default function RegisterForm() {
                         top: "-25px",
                         right: "25px",
                         width: "55px",
-                        filter: "drop-shadow(0 3px 6px rgba(0,0,0,0.3))",
+                        opacity: 0.15,
                     }}
                 />
 
-                {/* === CAMPOS === */}
-
+                {/* == CAMPOS == */}
                 <InputField
                     icon={<FaIdBadge />}
                     placeholder="Matrícula"
@@ -121,7 +141,7 @@ export default function RegisterForm() {
                     onChange={handleChange}
                 />
 
-                {/* SELECT Área */}
+                {/* SELECTS */}
                 <SelectField
                     icon={<FaSchool />}
                     name="area"
@@ -134,7 +154,6 @@ export default function RegisterForm() {
                     ]}
                 />
 
-                {/* SELECT Nivel */}
                 <SelectField
                     icon={<FaSchool />}
                     name="nivel"
@@ -147,7 +166,6 @@ export default function RegisterForm() {
                     ]}
                 />
 
-                {/* SELECT Grupo */}
                 <SelectField
                     icon={<FaSchool />}
                     name="grupo"
@@ -176,7 +194,7 @@ export default function RegisterForm() {
                     ]}
                 />
 
-                {/* BOTÓN Registrar */}
+                {/* BOTÓN REGISTRAR */}
                 <div className="text-center mt-4">
                     <button
                         onClick={handleSubmit}
@@ -184,15 +202,15 @@ export default function RegisterForm() {
                         style={{
                             width: "180px",
                             height: "50px",
-                            borderRadius: "10px",
-                            backgroundColor: "#007E8C",
+                            borderRadius: "25px",
+                            backgroundColor: colors.secondary,
                             border: "none",
-                            boxShadow: "0 5px 15px rgba(0,0,0,0.3)",
-                            transition: "0.3s ease",
+                            boxShadow: "0 6px 15px rgba(0,0,0,0.25)",
                             fontSize: "1rem",
+                            letterSpacing: "0.5px",
                         }}
-                        onMouseEnter={(e) => (e.target.style.backgroundColor = "#009AA8")}
-                        onMouseLeave={(e) => (e.target.style.backgroundColor = "#007E8C")}
+                        onMouseEnter={(e) => (e.target.style.backgroundColor = colors.primary)}
+                        onMouseLeave={(e) => (e.target.style.backgroundColor = colors.secondary)}
                     >
                         Registrar
                     </button>
@@ -202,9 +220,14 @@ export default function RegisterForm() {
     );
 }
 
-/* === COMPONENTE INPUT === */
+/* =======================
+     COMPONENTE INPUT
+======================= */
 function InputField({ icon, placeholder, type = "text", name, value, onChange }) {
-    const colorPrincipal = "#00B8C8";
+    const colors = {
+        primary: "#00B8C8",
+        textDark: "#333",
+    };
 
     return (
         <div style={{ position: "relative", marginBottom: "1.8rem" }}>
@@ -214,7 +237,7 @@ function InputField({ icon, placeholder, type = "text", name, value, onChange })
                     top: "50%",
                     left: "0",
                     transform: "translateY(-50%)",
-                    color: "#777",
+                    color: colors.primary,
                     fontSize: "1.1rem",
                     width: "35px",
                     textAlign: "center",
@@ -232,25 +255,30 @@ function InputField({ icon, placeholder, type = "text", name, value, onChange })
                 style={{
                     width: "100%",
                     border: "none",
-                    borderBottom: "2px solid #ccc",
+                    borderBottom: `2px solid #ccc`,
                     paddingLeft: "45px",
                     backgroundColor: "transparent",
                     fontSize: "1rem",
                     fontWeight: "600",
-                    color: "#555",
+                    color: colors.textDark,
                     outline: "none",
-                    transition: "border-color 0.3s ease",
+                    transition: "0.3s ease",
                 }}
-                onFocus={(e) => (e.target.style.borderBottom = `2px solid ${colorPrincipal}`)}
+                onFocus={(e) => (e.target.style.borderBottom = `2px solid ${colors.primary}`)}
                 onBlur={(e) => (e.target.style.borderBottom = "2px solid #ccc")}
             />
         </div>
     );
 }
 
-/* === COMPONENTE SELECT === */
+/* =======================
+     COMPONENTE SELECT
+======================= */
 function SelectField({ icon, name, value, onChange, options }) {
-    const colorPrincipal = "#00B8C8";
+    const colors = {
+        primary: "#00B8C8",
+        textDark: "#555",
+    };
 
     return (
         <div style={{ position: "relative", marginBottom: "1.8rem" }}>
@@ -260,7 +288,7 @@ function SelectField({ icon, name, value, onChange, options }) {
                     top: "50%",
                     left: "0",
                     transform: "translateY(-50%)",
-                    color: "#777",
+                    color: colors.primary,
                     fontSize: "1.1rem",
                     width: "35px",
                     textAlign: "center",
@@ -281,15 +309,16 @@ function SelectField({ icon, name, value, onChange, options }) {
                     backgroundColor: "transparent",
                     fontSize: "1rem",
                     fontWeight: "600",
-                    color: "#555",
+                    color: colors.textDark,
                     outline: "none",
                     appearance: "none",
+                    transition: "0.3s ease",
                 }}
-                onFocus={(e) => (e.target.style.borderBottom = `2px solid ${colorPrincipal}`)}
+                onFocus={(e) => (e.target.style.borderBottom = `2px solid ${colors.primary}`)}
                 onBlur={(e) => (e.target.style.borderBottom = "2px solid #ccc")}
             >
                 {options.map((opt, i) => (
-                    <option key={i} value={opt.value} style={{ color: "#333" }}>
+                    <option key={i} value={opt.value} style={{ color: "#555" }}>
                         {opt.label}
                     </option>
                 ))}

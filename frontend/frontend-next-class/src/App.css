@@ -1,0 +1,20 @@
+/* Botones más compactos en móviles */
+@media (max-width: 576px) {
+  .btn {
+    font-size: 0.9rem;
+    padding: 0.75rem;
+  }
+  img[alt="garra"] {
+    width: 40px;
+    height: 40px;
+    right: 5px;
+  }
+}
+
+/* Botones más grandes en pantallas grandes */
+@media (min-width: 992px) {
+  .btn {
+    font-size: 1.2rem;
+    padding: 1.25rem;
+  }
+}

@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FaUser, FaLock } from "react-icons/fa";
-import userServices from "../services/userServices";
+import api from "../services/axiosConfig.js";
+
 import Logoprincipal from "../assets/Logoprincipal.png";
 import garra from "../assets/garra.png";
 
@@ -15,7 +16,15 @@ function LoginForm() {
     const [success, setSuccess] = useState("");
 
     const navigate = useNavigate();
-    const colorPrincipal = "#00B8C8";
+
+    // 🎨 Colores basados 100% en el panel Admin
+    const colors = {
+        primary: "#00B8C8",
+        secondary: "#007E8C",
+        darkTeal: "#00838F",
+        textDark: "#333",
+        bgLight: "#F5F8FA",
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -25,33 +34,33 @@ function LoginForm() {
         }));
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setError("");
-        setSuccess("");
+   const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
 
-        try {
-            const response = await userServices.login(formData);
-            console.log("Respuesta del servidor:", response.data);
+    try {
+        const res = await api.post("/auth/login", formData);
 
-            setSuccess("Inicio de sesión exitoso");
+        localStorage.setItem("authToken", res.data.token);
 
-            if (response.data.token) {
-                localStorage.setItem("authToken", response.data.token);
-            }
-
-            navigate("/dashboard");
-        } catch (err) {
-            console.log(err);
-            setError("Matrícula o contraseña incorrecta");
+        if (res.data.role === "admin") {
+            return navigate("/panelControlAdmin");
         }
-    };
+
+        navigate("/dashboardAlumnos");
+
+    } catch (err) {
+        setError("Matrícula o contraseña incorrecta");
+    }
+};
+
 
     return (
         <div
             className="d-flex flex-column align-items-center min-vh-100"
             style={{
-                background: "linear-gradient(to bottom, #00838F 50%, #F5F8FA 50%)",
+                background: `linear-gradient(to bottom, ${colors.darkTeal} 50%, ${colors.bgLight} 50%)`,
                 overflow: "hidden",
                 position: "relative",
                 fontFamily: "Poppins, sans-serif",
@@ -75,21 +84,23 @@ function LoginForm() {
                         marginBottom: "0.5rem",
                     }}
                 />
-                <h2 style={{ fontWeight: "700", marginBottom: "0.3rem" }}>NEXTCLASS</h2>
+                <h2 style={{ fontWeight: "700", marginBottom: "0.3rem", letterSpacing: "1px" }}>
+                    NEXTCLASS
+                </h2>
                 <p style={{ fontSize: "1.2rem", opacity: 0.9 }}>Bienvenido</p>
             </div>
 
             {/* TARJETA INFERIOR */}
             <div
                 style={{
-                    backgroundColor: "#F5F8FA",
+                    backgroundColor: colors.bgLight,
                     borderTopLeftRadius: "60px",
                     borderTopRightRadius: "60px",
                     width: "100%",
                     maxWidth: "400px",
                     flex: 1,
                     padding: "2.5rem 1.5rem",
-                    boxShadow: "0 -5px 15px rgba(0,0,0,0.15)",
+                    boxShadow: "0 -8px 25px rgba(0,0,0,0.1)",
                     position: "relative",
                 }}
             >
@@ -102,52 +113,47 @@ function LoginForm() {
                         right: "25px",
                         width: "70px",
                         transform: "translateY(-35%)",
-                        opacity: 0.8,
+                        opacity: 0.15,
                     }}
                 />
 
                 <h3
                     style={{
-                        color: "#007E8C",
+                        color: colors.secondary,
                         fontWeight: "700",
                         marginBottom: "1.8rem",
                         textAlign: "left",
+                        fontSize: "1.4rem",
                     }}
                 >
                     Login
                 </h3>
 
                 {/* MENSAJES */}
-                {error && (
-                    <div className="alert alert-danger">{error}</div>
-                )}
-                {success && (
-                    <div className="alert alert-success">{success}</div>
-                )}
+                {error && <div className="alert alert-danger">{error}</div>}
+                {success && <div className="alert alert-success">{success}</div>}
 
                 <form onSubmit={handleSubmit}>
                     {/* INPUT MATRÍCULA */}
                     <div style={{ position: "relative", marginBottom: "1.2rem" }}>
+                        
                         <div
                             style={{
                                 position: "absolute",
                                 top: "50%",
-                                left: "0",
+                                left: "10px",
                                 transform: "translateY(-50%)",
-                                width: "58px",
-                                height: "58px",
+                                width: "45px",
+                                height: "45px",
                                 borderRadius: "50%",
-                                backgroundColor: "#fff",
-                                border: "1px solid #ccc",
+                                backgroundColor: colors.primary,
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                boxShadow: "0 2px 5px rgba(0,0,0,0.15)",
-                                transition: "all 0.3s ease",
-                                zIndex: 2,
+                                boxShadow: "0 4px 10px rgba(0,0,0,0.15)",
                             }}
                         >
-                            <FaUser color={colorPrincipal} size={20} />
+                            <FaUser color="white" size={18} />
                         </div>
 
                         <input
@@ -158,42 +164,39 @@ function LoginForm() {
                             onChange={handleChange}
                             style={{
                                 width: "100%",
-                                height: "58px",
-                                borderRadius: "50px",
-                                border: "1px solid #ccc",
-                                paddingLeft: "75px",
-                                backgroundColor: "#fff",
-                                boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
+                                height: "55px",
+                                borderRadius: "15px",
+                                border: "1px solid #ddd",
+                                paddingLeft: "65px",
+                                backgroundColor: "white",
                                 fontSize: "1rem",
-                                fontWeight: "600",
-                                color: "#555",
-                                outline: "none",
+                                fontWeight: "500",
+                                color: colors.textDark,
+                                boxShadow: "0 3px 10px rgba(0,0,0,0.08)",
                             }}
                         />
                     </div>
 
                     {/* INPUT CONTRASEÑA */}
-                    <div style={{ position: "relative", marginBottom: "1rem" }}>
+                    <div style={{ position: "relative", marginBottom: "1.2rem" }}>
+
                         <div
                             style={{
                                 position: "absolute",
                                 top: "50%",
-                                left: "0",
+                                left: "10px",
                                 transform: "translateY(-50%)",
-                                width: "58px",
-                                height: "58px",
+                                width: "45px",
+                                height: "45px",
                                 borderRadius: "50%",
-                                backgroundColor: "#fff",
-                                border: "1px solid #ccc",
+                                backgroundColor: colors.secondary,
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                boxShadow: "0 2px 5px rgba(0,0,0,0.15)",
-                                transition: "all 0.3s ease",
-                                zIndex: 2,
+                                boxShadow: "0 4px 10px rgba(0,0,0,0.15)",
                             }}
                         >
-                            <FaLock color={colorPrincipal} size={20} />
+                            <FaLock color="white" size={17} />
                         </div>
 
                         <input
@@ -204,16 +207,15 @@ function LoginForm() {
                             onChange={handleChange}
                             style={{
                                 width: "100%",
-                                height: "58px",
-                                borderRadius: "50px",
-                                border: "1px solid #ccc",
-                                paddingLeft: "75px",
-                                backgroundColor: "#fff",
-                                boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
+                                height: "55px",
+                                borderRadius: "15px",
+                                border: "1px solid #ddd",
+                                paddingLeft: "65px",
+                                backgroundColor: "white",
                                 fontSize: "1rem",
-                                fontWeight: "600",
-                                color: "#555",
-                                outline: "none",
+                                fontWeight: "500",
+                                color: colors.textDark,
+                                boxShadow: "0 3px 10px rgba(0,0,0,0.08)",
                             }}
                         />
                     </div>
@@ -222,12 +224,11 @@ function LoginForm() {
                     <div className="text-end" style={{ marginBottom: "1.5rem" }}>
                         <Link
                             to="/forgot-password"
-                            className="btn btn-link p-0"
                             style={{
+                                color: colors.primary,
+                                fontWeight: "600",
                                 textDecoration: "none",
-                                color: colorPrincipal,
                                 fontSize: "0.9rem",
-                                fontWeight: "500",
                             }}
                         >
                             ¿Olvidaste tu contraseña?
@@ -240,12 +241,14 @@ function LoginForm() {
                             type="submit"
                             className="fw-bold text-white"
                             style={{
-                                width: "130px",
-                                height: "42px",
+                                width: "140px",
+                                height: "45px",
                                 borderRadius: "25px",
-                                backgroundColor: "#007E8C",
+                                backgroundColor: colors.secondary,
                                 border: "none",
-                                boxShadow: "0 4px 10px rgba(0,0,0,0.2)",
+                                boxShadow: "0 6px 14px rgba(0,0,0,0.2)",
+                                fontSize: "1rem",
+                                letterSpacing: "0.5px",
                                 marginBottom: "1rem",
                             }}
                         >
@@ -254,20 +257,20 @@ function LoginForm() {
 
                         <br />
 
-                        {/* BOTÓN REGISTRO */}
+                        {/* BOTÓN SIGN UP */}
                         <Link
                             to="/register"
                             className="fw-bold d-inline-block text-center"
                             style={{
-                                width: "130px",
-                                height: "42px",
-                                lineHeight: "42px",
+                                width: "140px",
+                                height: "45px",
+                                lineHeight: "45px",
                                 borderRadius: "25px",
                                 backgroundColor: "#fff",
-                                color: "#000",
-                                border: "none",
-                                boxShadow: "0 4px 10px rgba(0,0,0,0.2)",
+                                color: colors.textDark,
+                                boxShadow: "0 6px 14px rgba(0,0,0,0.2)",
                                 textDecoration: "none",
+                                fontWeight: "600",
                             }}
                         >
                             Sign Up

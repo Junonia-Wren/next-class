@@ -4,11 +4,41 @@ const subjectSchema = new Schema(
   {
     name: { type: String, required: true },
 
+    teacher: { type: String, required: true },
+
+    // === CAMPOS NUEVOS PARA SOPORTAR TU FRONT ===
+    profesorFoto: { type: String, default: "" },
+
+    porcentajes: {
+      ser: {
+        valor: { type: Number, default: 0 },
+        descripcion: { type: String, default: "" }
+      },
+      saber: {
+        valor: { type: Number, default: 0 },
+        descripcion: { type: String, default: "" }
+      },
+      saberHacer: {
+        valor: { type: Number, default: 0 },
+        descripcion: { type: String, default: "" }
+      }
+    },
+
+    unidades: [
+      {
+        porcentaje: { type: Number, default: 0 },
+        fechas: { type: String, default: "" }
+      }
+    ],
+
+    notas: { type: String, default: "" },
+
+    // === TUS CAMPOS ORIGINALES (SIN CAMBIOS) ===
     groups: {
       type: [{ type: Schema.Types.ObjectId, ref: "Group" }],
       required: true,
       validate: {
-        validator: v => Array.isArray(v) && v.length > 0,
+        validator: (v) => Array.isArray(v) && v.length > 0,
         message: "Subject must have at least one group assigned.",
       },
     },
