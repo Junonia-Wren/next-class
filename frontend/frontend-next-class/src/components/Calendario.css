@@ -1,0 +1,134 @@
+/* Contenedor principal */
+.custom-calendar-container {
+    background: white;
+    border-radius: 20px;
+    padding: 10px;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Reset general del calendario */
+.react-calendar {
+    width: 100%;
+    background: transparent;
+    border: none;
+    line-height: 1.125em;
+}
+
+/* --- ENCABEZADO (Mes y Año) --- */
+.react-calendar__navigation {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.react-calendar__navigation button {
+    min-width: 40px;
+    background: none;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #007E8C; /* Color de tu app */
+    border: none;
+    padding: 5px;
+}
+
+.react-calendar__navigation button:disabled {
+    background-color: transparent;
+    color: #ccc;
+}
+
+/* Botones de flechas (< >) */
+.react-calendar__navigation__prev-button,
+.react-calendar__navigation__next-button {
+    background: #F5F8FA !important; /* Círculo gris claro */
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 10px;
+    color: #007E8C !important;
+    font-size: 1.5rem; /* Flecha más grande */
+}
+
+/* Título del Mes (Diciembre 2025) */
+.react-calendar__navigation__label {
+    font-weight: 800 !important;
+    text-transform: uppercase;
+    font-size: 1.1rem !important;
+    letter-spacing: 1px;
+    pointer-events: none; /* Que no sea clickeable */
+}
+
+/* --- DÍAS DE LA SEMANA (Lun, Mar...) --- */
+.react-calendar__month-view__weekdays {
+    text-align: center;
+    text-transform: uppercase;
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: #888;
+    margin-bottom: 15px;
+    text-decoration: none;
+}
+
+.react-calendar__month-view__weekdays__weekday abbr {
+    text-decoration: none; /* Quitar subrayado de puntos */
+    cursor: default;
+}
+
+/* --- CELDAS DE DÍAS --- */
+.react-calendar__tile {
+    max-width: 100%;
+    background: none;
+    text-align: center;
+    line-height: 40px; /* Altura de la celda */
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #444;
+    border: none;
+    padding: 0;
+    margin-bottom: 5px;
+    position: relative; /* Para posicionar el punto */
+}
+
+/* Hover suave */
+.react-calendar__tile:enabled:hover,
+.react-calendar__tile:enabled:focus {
+    background-color: #f0f0f0;
+    border-radius: 12px;
+    color: #007E8C;
+}
+
+/* Día Actual (Cuadro azul claro como en tu imagen) */
+.react-calendar__tile--now {
+    background: #E0F7FA !important;
+    border-radius: 12px;
+    color: #007E8C !important;
+    font-weight: 800;
+}
+
+/* Día Seleccionado (Azul fuerte) */
+.react-calendar__tile--active {
+    background: #00B8C8 !important;
+    border-radius: 12px;
+    color: white !important;
+    font-weight: bold;
+}
+
+/* --- EL PUNTO DE TAREA --- */
+.dot-container {
+    position: absolute;
+    bottom: 5px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+}
+
+.task-dot {
+    width: 6px;
+    height: 6px;
+    background-color: #E91E63; /* Rosa/Rojo para destacar */
+    border-radius: 50%;
+}

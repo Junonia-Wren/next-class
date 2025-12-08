@@ -2,12 +2,14 @@ import { model, Schema } from "mongoose";
 
 const subjectSchema = new Schema(
   {
-    name: { type: String, required: true },
+    name: { type: String, required: true, trim: true },
+    teacher: { type: String, required: true, trim: true }, // Nombre del docente
 
-    teacher: { type: String, required: true },
-
-    // === CAMPOS NUEVOS PARA SOPORTAR TU FRONT ===
-    profesorFoto: { type: String, default: "" },
+    // CORREGIDO: Usamos el nombre en español para evitar confusiones
+    profesorFoto: { 
+        type: String, 
+        default: "" 
+    },
 
     porcentajes: {
       ser: {
@@ -26,22 +28,13 @@ const subjectSchema = new Schema(
 
     unidades: [
       {
+        id: { type: Number },
         porcentaje: { type: Number, default: 0 },
         fechas: { type: String, default: "" }
       }
     ],
 
     notas: { type: String, default: "" },
-
-    // === TUS CAMPOS ORIGINALES (SIN CAMBIOS) ===
-    groups: {
-      type: [{ type: Schema.Types.ObjectId, ref: "Group" }],
-      required: true,
-      validate: {
-        validator: (v) => Array.isArray(v) && v.length > 0,
-        message: "Subject must have at least one group assigned.",
-      },
-    },
   },
   { timestamps: true }
 );

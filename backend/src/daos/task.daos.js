@@ -1,49 +1,39 @@
-import { Task } from "../models/index.models.js";
+import Task from "../models/task.model.js";
 
 const taskDaos = {};
 
+// Obtener todas (Admin)
 taskDaos.getAll = async () => {
     return await Task.find()
-        .populate("subject")
-        .populate("group")
-        .populate("createdBy");
+        .populate('subject', 'name')
+        .populate('group', 'name');
 };
 
-taskDaos.getOne = async (task_id) => {
-    return await Task.findById(task_id)
-        .populate("subject")
-        .populate("group")
-        .populate("createdBy");
+// Obtener una
+taskDaos.getOne = async (id) => {
+    return await Task.findById(id).populate('subject', 'name');
 };
 
-taskDaos.insertOne = async (data) => {
+// Obtener tareas por ID de Grupo (La más importante)
+taskDaos.getByGroupId = async (groupId) => {
+    return await Task.find({ group: groupId })
+        .populate('subject', 'name')
+        .sort({ dueDate: 1 }); // Ordenadas por fecha
+};
+
+// Crear
+taskDaos.create = async (data) => {
     return await Task.create(data);
 };
 
-taskDaos.updateOne = async (task_id, data) => {
-    return await Task.findByIdAndUpdate(task_id, data, { new: true })
-        .populate("subject")
-        .populate("group")
-        .populate("createdBy");
+// Actualizar
+taskDaos.update = async (id, data) => {
+    return await Task.findByIdAndUpdate(id, data, { new: true });
 };
 
-taskDaos.deleteOne = async (task_id) => {
-    return await Task.findByIdAndDelete(task_id);
-};
-
-taskDaos.getByGroup = async (groupId) => {
-    return await Task.find({ group: groupId })
-        .populate("subject")
-        .populate("createdBy")
-        .populate("group");
-};
-
-taskDaos.markCompleted = async (task_id) => {
-    return await Task.findByIdAndUpdate(
-        task_id,
-        { completed: true },
-        { new: true }
-    );
+// Eliminar
+taskDaos.delete = async (id) => {
+    return await Task.findByIdAndDelete(id);
 };
 
 export default taskDaos;

@@ -1,19 +1,27 @@
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import User from "../models/user.model.js"; // Importamos User para validaciones extra si se requieren
+
 dotenv.config();
 
 const SECRET = process.env.JWT_SECRET;
 
 export const verifyToken = (req, res, next) => {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) return res.status(401).json({ message: "Token requerido" });
+    // Aceptamos "Bearer token" o solo "token"
+    let token = req.headers["x-access-token"] || req.headers["authorization"];
+    
+    if (!token) return res.status(403).json({ message: "Token requerido" });
+
+    if (token.startsWith("Bearer ")) {
+        token = token.slice(7, token.length);
+    }
 
     try {
         const decoded = jwt.verify(token, SECRET);
-        req.user = decoded; // aquí guardamos los datos del usuario en req.user
+        req.user = decoded; // { uid: '...', role: '...', matricula: '...' }
         next();
     } catch (error) {
-        res.status(401).json({ message: "Token inválido" });
+        return res.status(401).json({ message: "Token inválido" });
     }
 };
 
@@ -25,8 +33,12 @@ export const isAdmin = (req, res, next) => {
 };
 
 export const isJefeGrupo = (req, res, next) => {
-    if (req.user.role !== "group_leader") {
+    // CORRECCIÓN AQUÍ:
+    // El rol en la BD es "chief", no "group_leader".
+    // Además permitimos pasar si es "admin".
+    if (req.user.role === "chief" || req.user.role === "admin") {
+        next();
+    } else {
         return res.status(403).json({ message: "Acceso denegado: solo jefes de grupo" });
     }
-    next();
 };

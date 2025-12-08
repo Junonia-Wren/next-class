@@ -2,6 +2,7 @@
 import api from "./axiosConfig";
 
 const AdminService = {
+    getDashboardStats: () => api.get("/admin/dashboard-stats"),
     
     // Obtener todos los jefes de grupo
     getAllLeaders() {
