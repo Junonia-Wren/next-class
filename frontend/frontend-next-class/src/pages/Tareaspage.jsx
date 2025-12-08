@@ -67,11 +67,12 @@ export default function TareasPage() {
         return Array.from(map.values());
     };
 
+    // --- CORRECCIÓN AQUÍ ---
+    // Agregamos "t.subject &&" para asegurar que la tarea tenga materia antes de leer el ID
     const getTareasPorMateria = (subjectId) => {
-        return tareas.filter(t => (t.subject._id || t.subject) === subjectId);
+        return tareas.filter(t => t.subject && (t.subject._id || t.subject) === subjectId);
     };
 
-    // Extraemos fechas para el calendario
     const fechasConTarea = tareas.map(t => t.dueDate);
 
     const handleDelete = async (id) => {
@@ -94,11 +95,11 @@ export default function TareasPage() {
         setModalOpen(true);
     };
 
-    // Lógica para saber qué materias mostrar
+    // Filtro visual
     const materiasVisibles = materias.filter(materia => {
-        if (esJefe) return true; // Jefe ve todas
+        if (esJefe) return true; 
         const tareasDeEsta = getTareasPorMateria(materia._id);
-        return tareasDeEsta.length > 0; // Alumno solo ve si hay tareas
+        return tareasDeEsta.length > 0; 
     });
 
     return (
@@ -178,7 +179,6 @@ export default function TareasPage() {
                                                     <div key={tarea._id} className={`p-3 mb-2 rounded-3 border-start border-4 ${tarea.completed ? "border-success bg-light opacity-75" : "border-warning bg-white shadow-sm"}`}>
                                                         <div className="d-flex justify-content-between align-items-start">
                                                             <div className="pe-2">
-                                                                {/* USO DE DIV Y H6 PARA EVITAR ERROR DE REACT */}
                                                                 <h6 className={`fw-bold mb-1 ${tarea.completed ? "text-decoration-line-through text-muted" : "text-dark"}`}>
                                                                     {tarea.title}
                                                                 </h6>
@@ -186,8 +186,7 @@ export default function TareasPage() {
                                                                 
                                                                 <div className="d-flex align-items-center gap-1 small text-muted">
                                                                     <CalIcon size={14}/>
-                                                                    {/* FECHA CORREGIDA PARA VISTA (+UTC) */}
-                                                                    <span>{new Date(tarea.dueDate).toISOString().substring(0,10)}</span>
+                                                                    <span>{new Date(tarea.dueDate).toLocaleDateString('es-MX', { timeZone: 'UTC' })}</span>
                                                                 </div>
                                                             </div>
                                                             
@@ -212,7 +211,6 @@ export default function TareasPage() {
                     )}
                 </div>
 
-                {/* CALENDARIO */}
                 <div className="rounded-4 bg-white border p-3 shadow-sm">
                     <Calendario taskDates={fechasConTarea} /> 
                 </div>

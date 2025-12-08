@@ -1,13 +1,24 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
+import React from 'react'
+import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
-import 'bootstrap/dist/css/bootstrap.min.css';
-import 'bootstrap/dist/js/bootstrap.bundle.min.js';
+import { registerSW } from 'virtual:pwa-register'
 
+import 'bootstrap/dist/css/bootstrap.min.css'; // Vital para que funcione el diseño (d-flex, etc)
+import './index.css' // Tus estilos globales (fuentes, resets)
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
+const updateSW = registerSW({
+  onNeedRefresh() {
+    if (confirm("Hay una nueva versión disponible. ¿Actualizar?")) {
+      updateSW(true);
+    }
+  },
+  onOfflineReady() {
+    console.log("App lista para trabajar offline");
+  },
+})
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
     <App />
-  </StrictMode>,
+  </React.StrictMode>,
 )
