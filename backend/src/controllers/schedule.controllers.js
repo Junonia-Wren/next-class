@@ -1,123 +1,150 @@
-import scheduleDaos from "../daos/schedule.daos.js";
-import userDaos from "../daos/user.daos.js";
-import groupDaos from "../daos/group.daos.js";
+import Schedule from "../models/schedule.model.js";
+import Group from "../models/group.model.js";
+import User from "../models/user.model.js";
 
 const scheduleControllers = {};
 
-// Obtener todos
+// ==========================================
+// 1. RUTAS LIBRES (CONSULTA)
+// ==========================================
+
+// Obtener todos los horarios
 scheduleControllers.getAll = async (req, res) => {
     try {
-        const data = await scheduleDaos.getAll();
-        res.json({ data });
+        const schedules = await Schedule.find()
+            .populate('group', 'name level area') // Ver info del grupo
+            .populate('schedule.Lunes.subject')   // Ver nombres de materias
+            .populate('schedule.Martes.subject')
+            .populate('schedule.Miércoles.subject')
+            .populate('schedule.Jueves.subject')
+            .populate('schedule.Viernes.subject');
+            
+        res.json({ data: schedules });
     } catch (error) {
-        res.status(500).json({ message: "Error", error });
+        res.status(500).json({ message: "Error al obtener horarios", error: error.message });
     }
 };
 
-// Obtener uno
+// Obtener uno por ID del Horario (_id)
 scheduleControllers.getOne = async (req, res) => {
     try {
-        const schedule = await scheduleDaos.getOne(req.params.schedule_id);
-        if (!schedule) return res.status(404).json({ message: "No encontrado" });
+        const { schedule_id } = req.params;
+        const schedule = await Schedule.findById(schedule_id)
+            .populate('group')
+            .populate('schedule.Lunes.subject'); // (Agrega los demás días si es necesario)
+            
+        if (!schedule) return res.status(404).json({ message: "Horario no encontrado" });
+        
+        res.json({ data: schedule });
+    } catch (error) {
+        res.status(500).json({ message: "Error", error: error.message });
+    }
+};
+
+// Obtener por Nombre de Grupo (query param ?name=10A)
+scheduleControllers.getByGrupoName = async (req, res) => {
+    try {
+        const { name } = req.query; // Se recibe por ?name=...
+        if (!name) return res.status(400).json({ message: "Falta el nombre del grupo" });
+
+        // 1. Buscamos el grupo primero
+        const group = await Group.findOne({ name: name }); // Ajusta si buscas por '10A' exacto
+        if (!group) return res.status(404).json({ message: "Grupo no existe" });
+
+        // 2. Buscamos el horario de ese grupo
+        const schedule = await Schedule.findOne({ group: group._id })
+            .populate('schedule.Lunes.subject'); // Populate necesario
+
+        if (!schedule) return res.status(404).json({ message: "Este grupo no tiene horario asignado" });
 
         res.json({ data: schedule });
     } catch (error) {
-        res.status(500).json({ message: "Error", error });
+        res.status(500).json({ message: "Error", error: error.message });
     }
 };
 
-// Insertar
-scheduleControllers.insertOne = async (req, res) => {
-    try {
-        const { group, subject, teacher, day, startTime, endTime } = req.body;
-
-        const conflict = await scheduleDaos.findTimeConflict(group, day, startTime, endTime);
-
-        if (conflict) {
-            return res.status(409).json({ message: "Conflicto de horario", conflict });
-        }
-
-        const newSchedule = await scheduleDaos.insertOne(req.body);
-        res.status(201).json({ message: "Creado", data: newSchedule });
-
-    } catch (error) {
-        res.status(500).json({ message: "Error", error });
-    }
-};
-
-// Actualizar
-scheduleControllers.updateOne = async (req, res) => {
-    try {
-        const updated = await scheduleDaos.updateOne(req.params.schedule_id, req.body);
-        if (!updated) return res.status(404).json({ message: "No encontrado" });
-
-        res.json({ message: "Actualizado", data: updated });
-    } catch (error) {
-        res.status(500).json({ message: "Error", error });
-    }
-};
-
-// Eliminar
-scheduleControllers.deleteOne = async (req, res) => {
-    try {
-        const deleted = await scheduleDaos.deleteOne(req.params.schedule_id);
-        if (!deleted) return res.status(404).json({ message: "No encontrado" });
-
-        res.json({ message: "Eliminado", data: deleted });
-    } catch (error) {
-        res.status(500).json({ message: "Error", error });
-    }
-};
-
-scheduleControllers.getByGrupoName = async (req, res) => {
-    try {
-        const { name } = req.query;
-
-        if (!name) {
-            return res.status(400).json({
-                message: "Falta el parámetro name (ej: name=5A)"
-            });
-        }
-
-        // 1. Obtener grupo mediante DAO
-        const grupo = await groupDaos.getByName(name);
-        if (!grupo) {
-            return res.status(404).json({
-                message: `El grupo '${name}' no existe`
-            });
-        }
-
-        // 2. Obtener horarios por ID mediante DAO
-        const horarios = await scheduleDaos.getByGroup(grupo._id);
-
-        res.json({
-            group: grupo,
-            horarios
-        });
-
-    } catch (error) {
-        res.status(500).json({
-            message: "Error al obtener horarios por nombre de grupo",
-            error
-        });
-    }
-};
-
-// Obtener horario de un alumno
+// ★ LÓGICA CLAVE: Obtener horario del alumno logueado (por matrícula)
 scheduleControllers.getHorarioAlumno = async (req, res) => {
     try {
-        const alumno = await userDaos.getByMatricula(req.params.matricula);
-        if (!alumno) return res.status(404).json({ message: "Alumno no encontrado" });
+        const { matricula } = req.params;
 
-        if (!alumno.group)
-            return res.status(400).json({ message: "Este alumno no tiene grupo asignado" });
+        // 1. Buscar al alumno
+        const user = await User.findOne({ matricula });
+        if (!user) return res.status(404).json({ message: "Alumno no encontrado" });
 
-        const horarios = await scheduleDaos.getByGroup(alumno.group);
+        // 2. Buscar a qué grupo pertenece (el Grupo tiene al alumno en su array 'students')
+        const group = await Group.findOne({ students: user._id });
+        if (!group) return res.status(404).json({ message: "No estás asignado a ningún grupo" });
 
-        res.json({ grupo: alumno.group, horarios });
+        // 3. Buscar el horario de ese grupo
+        const schedule = await Schedule.findOne({ group: group._id })
+            // Populate profundo para que el front reciba nombres, no IDs
+            .populate('schedule.Lunes.subject')
+            .populate('schedule.Martes.subject')
+            .populate('schedule.Miércoles.subject')
+            .populate('schedule.Jueves.subject')
+            .populate('schedule.Viernes.subject');
 
+        if (!schedule) return res.status(404).json({ message: "Tu grupo aún no tiene horario" });
+
+        res.json({ data: schedule, groupInfo: group });
     } catch (error) {
-        res.status(500).json({ message: "Error", error });
+        console.error(error);
+        res.status(500).json({ message: "Error al cargar tu horario", error: error.message });
+    }
+};
+
+
+// ==========================================
+// 2. RUTAS PROTEGIDAS (ADMIN)
+// ==========================================
+
+// Insertar Nuevo Horario
+scheduleControllers.insertOne = async (req, res) => {
+    try {
+        const { group, schedule } = req.body; // Recibe ID del grupo y la matriz
+
+        // Verificar si ya existe para no duplicar
+        const existing = await Schedule.findOne({ group });
+        if (existing) return res.status(400).json({ message: "Este grupo ya tiene un horario. Usa actualizar." });
+
+        const newSchedule = new Schedule({ group, schedule });
+        await newSchedule.save();
+
+        res.status(201).json({ message: "Horario creado exitosamente", data: newSchedule });
+    } catch (error) {
+        res.status(400).json({ message: "Error al crear horario", error: error.message });
+    }
+};
+
+// Actualizar Horario
+scheduleControllers.updateOne = async (req, res) => {
+    try {
+        const { schedule_id } = req.params;
+        const { schedule } = req.body; // Solo actualizamos la matriz de días
+
+        const updated = await Schedule.findByIdAndUpdate(
+            schedule_id, 
+            { schedule }, 
+            { new: true }
+        );
+
+        if (!updated) return res.status(404).json({ message: "Horario no encontrado" });
+
+        res.json({ message: "Horario actualizado", data: updated });
+    } catch (error) {
+        res.status(400).json({ message: "Error al actualizar", error: error.message });
+    }
+};
+
+// Eliminar Horario
+scheduleControllers.deleteOne = async (req, res) => {
+    try {
+        const { schedule_id } = req.params;
+        await Schedule.findByIdAndDelete(schedule_id);
+        res.json({ message: "Horario eliminado" });
+    } catch (error) {
+        res.status(500).json({ message: "Error al eliminar", error: error.message });
     }
 };
 

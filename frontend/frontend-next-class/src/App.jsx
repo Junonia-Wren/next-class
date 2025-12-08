@@ -13,6 +13,7 @@ import DashboardAlumnos from "./pages/dashboardAlumnos";
 import TareasPage from "./pages/Tareaspage.jsx";
 import AsignaturasPage from "./pages/AsignaturasPage.jsx";
 import AsignaturaDetalle from "./pages/AsignaturaDetalle.jsx";
+import NotFound from "./pages/NotFound";
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
         <Route path="/tareas" element={<TareasPage />} />
         <Route path="/asignaturas" element={<AsignaturasPage />} />
         <Route path="/asignaturas/:id" element={<AsignaturaDetalle />} />
+        <Route path="*" element={<NotFound />} />
 
       </Routes>
     </Router>

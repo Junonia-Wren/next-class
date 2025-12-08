@@ -1,4 +1,5 @@
 import userDaos from "../daos/user.daos.js";
+import Group from "../models/group.model.js"; 
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 
@@ -10,22 +11,54 @@ const authControllers = {};
 // Registro (solo alumnos)
 authControllers.register = async (req, res) => {
     try {
-        const data = req.body;
+        const { matricula, name, password, nivel, area, grupo } = req.body;
 
-        // Forzar rol seguro
-        data.role = "student";
+        const userData = {
+            matricula,
+            name,
+            password,
+            role: "student"
+        };
 
-        const newUser = await userDaos.create(data);
+        // 1. CREAR USUARIO (Variable: newUser)
+        const newUser = await userDaos.create(userData);
+
+        // 2. ASIGNACIÓN AUTOMÁTICA DE GRUPO
+        if (nivel && area && grupo) {
+            
+            const groupFound = await Group.findOne({ 
+                level: nivel, 
+                area: area, 
+                name: grupo 
+            });
+
+            if (groupFound) {
+                // SI EXISTE: Usamos newUser._id
+                groupFound.students.push(newUser._id);
+                await groupFound.save();
+                console.log(`Alumno agregado al grupo existente: ${grupo}`);
+            } else {
+                // NO EXISTE: Usamos newUser._id
+                await Group.create({
+                    level: nivel,
+                    area: area,
+                    name: grupo,
+                    students: [newUser._id] // <--- AQUÍ ESTABA EL ERROR
+                });
+                console.log(`Grupo nuevo ${grupo} creado automáticamente.`);
+            }
+        }
 
         return res.status(201).json({
-            message: "Usuario registrado correctamente",
+            message: "Usuario registrado y asignado correctamente",
             data: newUser
         });
 
     } catch (error) {
+        console.error("Error en registro:", error);
         return res.status(400).json({
             message: "Error al registrar usuario",
-            error
+            error: error.message || error
         });
     }
 };
@@ -45,18 +78,15 @@ authControllers.login = async (req, res) => {
             return res.status(401).json({ message: "Contraseña incorrecta" });
         }
 
-        // Token limpio con IDs correctos
         const token = jwt.sign(
             {
                 uid: user._id,
                 matricula: user.matricula,
                 role: user.role,
-                group: user.group ? user.group.toString() : null,
             },
             SECRET,
             { expiresIn: "1d" }
         );
-
 
         return res.json({
             message: "Login exitoso",

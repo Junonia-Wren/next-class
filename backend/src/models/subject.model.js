@@ -2,16 +2,29 @@ import { model, Schema } from "mongoose";
 
 const subjectSchema = new Schema(
   {
-    name: { type: String, required: true },
+    // === DATOS PRINCIPALES ===
+    name: { 
+        type: String, 
+        required: true, 
+        trim: true 
+    },
 
-    teacher: { type: String, required: true },
+    teacher: { 
+        type: String, 
+        required: true, 
+        trim: true 
+    },
 
-    // === CAMPOS NUEVOS PARA SOPORTAR TU FRONT ===
-    profesorFoto: { type: String, default: "" },
+    // === DATOS DE PERFIL VISUAL ===
+    profesorFoto: { 
+        type: String, 
+        default: "" 
+    },
 
+    // === CRITERIOS DE EVALUACIÓN (NUMÉRICOS) ===
     porcentajes: {
       ser: {
-        valor: { type: Number, default: 0 },
+        valor: { type: Number, default: 0 }, 
         descripcion: { type: String, default: "" }
       },
       saber: {
@@ -24,24 +37,22 @@ const subjectSchema = new Schema(
       }
     },
 
+    // === UNIDADES ===
     unidades: [
       {
+        id: { type: Number }, // Guardamos el ID visual (1, 2, 3...)
         porcentaje: { type: Number, default: 0 },
         fechas: { type: String, default: "" }
       }
     ],
 
-    notas: { type: String, default: "" },
-
-    // === TUS CAMPOS ORIGINALES (SIN CAMBIOS) ===
-    groups: {
-      type: [{ type: Schema.Types.ObjectId, ref: "Group" }],
-      required: true,
-      validate: {
-        validator: (v) => Array.isArray(v) && v.length > 0,
-        message: "Subject must have at least one group assigned.",
-      },
-    },
+    // === EXTRAS ===
+    notas: { 
+        type: String, 
+        default: "" 
+    }
+    
+    // Se eliminó 'groups' como solicitaste.
   },
   { timestamps: true }
 );

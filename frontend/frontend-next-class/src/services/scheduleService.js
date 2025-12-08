@@ -1,43 +1,19 @@
-// services/schedule.service.js
 import api from "./axiosConfig";
 
 const ScheduleService = {
+    getAll: () => api.get("/schedules/getAll"),
+    getOne: (id) => api.get(`/schedules/getOne/${id}`),
+    
+    // Inserta un nuevo horario
+    create: (data) => api.post("/schedules/insertSchedule", data),
+    
+    // Actualiza por ID del horario (Ojo: tu ruta pide schedule_id)
+    update: (scheduleId, data) => api.put(`/schedules/updateSchedule/${scheduleId}`, data),
+    
+    delete: (scheduleId) => api.delete(`/schedules/deleteSchedule/${scheduleId}`),
 
-    // -------------------------
-    // CONSULTAS
-    // -------------------------
-
-    getAll() {
-        return api.get("/schedule/getAll");
-    },
-
-    getOne(id) {
-        return api.get(`/schedule/getOne/${id}`);
-    },
-
-    getByGroupName(name) {
-        return api.get(`/schedule/getByGrupoName?name=${name}`);
-    },
-
-    getHorarioAlumno(matricula) {
-        return api.get(`/schedule/getHorarioAlumno/${matricula}`);
-    },
-
-    // -------------------------
-    // CRUD ADMIN (TOKEN)
-    // -------------------------
-
-    insert(data) {
-        return api.post("/schedule/insertSchedule", data);
-    },
-
-    update(id, data) {
-        return api.put(`/schedule/updateSchedule/${id}`, data);
-    },
-
-    delete(id) {
-        return api.delete(`/schedule/deleteSchedule/${id}`);
-    }
+    // Funciones extra para alumno
+    getHorarioAlumno: (matricula) => api.get(`/schedules/getHorarioAlumno/${matricula}`)
 };
 
 export default ScheduleService;

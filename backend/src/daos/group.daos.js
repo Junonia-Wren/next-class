@@ -12,12 +12,23 @@ groupDaos.getAll = async () => {
     return await Group.find();
 };
 
-// Obtener uno por ID
+groupDaos.getUniqueAreas = async () => {
+    // "distinct" busca todos los valores únicos del campo "area"
+    return await Group.distinct("area");
+};
+
+// Obtener uno por ID (Simple, para editar datos del grupo)
 groupDaos.getOne = async (id) => {
     return await Group.findById(id);
 };
 
-// Buscar por nombre ("5A")
+// --- NUEVO: Obtener uno con Alumnos (Para la lista de asistencia) ---
+groupDaos.getOneWithStudents = async (id) => {
+    return await Group.findById(id)
+        .populate('students', 'matricula name role email'); // Trae datos reales del usuario
+};
+
+// Buscar por nombre
 groupDaos.getByName = async (name) => {
     return await Group.findOne({ name });
 };
@@ -30,6 +41,13 @@ groupDaos.updateOne = async (id, data) => {
 // Eliminar
 groupDaos.deleteOne = async (id) => {
     return await Group.findByIdAndDelete(id);
+};
+
+// --- NUEVOS: Operaciones de Alumnos (Sin usar Model directo en controller) ---
+groupDaos.removeStudent = async (groupId, userId) => {
+    return await Group.findByIdAndUpdate(groupId, {
+        $pull: { students: userId }
+    }, { new: true });
 };
 
 export default groupDaos;

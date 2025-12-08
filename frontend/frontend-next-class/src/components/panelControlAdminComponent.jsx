@@ -14,7 +14,6 @@ import { useNavigate } from 'react-router-dom';
 import Horarios from './Horarios';
 import Clases from './Clases';
 import Asignaturas from './Asignaturas';
-import JefesGrupo from "./JefesGrupo";
 
 
 // IMPORTACIÓN DE IMÁGENES (Asegúrate de que los nombres coincidan exactamente)
@@ -120,7 +119,6 @@ export default function AdminDashboard() {
     { id: "horarios", name: "Horarios", icon: <Calendar size={20} /> },
     { id: "clases", name: "Clases", icon: <GraduationCap size={20} /> },
     { id: "asignaturas", name: "Asignaturas", icon: <Presentation size={20} /> },
-    { id: "jefes", name: "Jefes de Grupo", icon: <GraduationCap size={20} /> },
 
   ];
 
