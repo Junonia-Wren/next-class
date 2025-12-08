@@ -50,4 +50,12 @@ userDaos.getByMatricula = async (matricula) => {
     return await User.findOne({ matricula }).populate("group");
 };
 
+// Obtener todos los alumnos por nombre de grupo
+userDaos.getStudentsByGrupo = async (groupName) => {
+    const group = await Group.findOne({ name: groupName });
+    if (!group) return [];
+
+    return await User.find({ group: group._id }).populate("group");
+};
+
 export default userDaos;

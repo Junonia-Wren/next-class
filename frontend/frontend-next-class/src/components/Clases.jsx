@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from "react";
 import {
     Plus,
     Search,
@@ -9,13 +9,16 @@ import {
     GraduationCap,
     Book,
     Users
-} from 'lucide-react';
-import FeedbackModal from './FeedbackModal';
+} from "lucide-react";
+
+import groupService from "../services/groupService";
+import FeedbackModal from "./FeedbackModal";
+import GrupoDetalle from "./GrupoDetalle";
 
 const Clases = ({ colors }) => {
-    const [viewMode, setViewMode] = useState('list'); // 'list' o 'form'
 
-    // Estado del formulario
+    const [viewMode, setViewMode] = useState("list");
+
     const [formData, setFormData] = useState({
         id: null,
         nivel: "",
@@ -23,151 +26,244 @@ const Clases = ({ colors }) => {
         grupo: ""
     });
 
-    // Estado para el Modal (Reutilizado de Horarios)
     const [modalConfig, setModalConfig] = useState({
         isOpen: false,
-        type: 'success',
-        title: '',
-        message: '',
+        type: "success",
+        title: "",
+        message: "",
         onConfirm: () => { },
         onCancel: () => { }
     });
 
-    // Datos de ejemplo
-    const [clasesList, setClasesList] = useState([
-        { id: 1, nivel: "Ingeniería", area: "Entornos Virtuales", grupo: "10A" },
-        { id: 2, nivel: "Ingeniería", area: "Desarrollo de Software", grupo: "9B" },
-        { id: 3, nivel: "Ingeniería", area: "Negocios Digitales", grupo: "4A" },
-        { id: 4, nivel: "TSU", area: "Mecatrónica", grupo: "2C" },
-    ]);
 
-    // --- LÓGICA DEL MODAL ---
-    const closeModal = () => setModalConfig({ ...modalConfig, isOpen: false });
+    const [selectedGroup, setSelectedGroup] = useState(null);
 
-    // 1. Guardar (Crear/Editar)
-    const handleSave = () => {
-        // Validación simple
-        if (!formData.nivel || !formData.area || !formData.grupo) return;
 
-        // Aquí iría la lógica de Backend...
+    // 👇 LISTA REAL DESDE BACKEND
+    const [clasesList, setClasesList] = useState([]);
 
-        setModalConfig({
-            isOpen: true,
-            type: 'success',
-            title: formData.id ? '¡Actualización Exitosa!' : '¡Creación Exitosa!',
-            message: `La clase del grupo ${formData.grupo} ha sido ${formData.id ? 'actualizada' : 'registrada'} correctamente.`,
-            onConfirm: () => {
-                closeModal();
-                setViewMode('list');
-            }
-        });
+    // ============================
+    // 🔵 Cargar grupos al iniciar
+    // ============================
+    const loadGroups = async () => {
+        try {
+            const res = await groupService.getAll();
+            const data = res.data.data;
+
+            // Adaptamos al formato del frontend
+            const formatted = data.map((g) => ({
+                id: g._id,
+                nivel: g.level,
+                area: g.area,
+                grupo: g.name
+            }));
+
+            setClasesList(formatted);
+
+        } catch (error) {
+            console.error("Error al cargar grupos:", error);
+        }
     };
 
-    // 2. Solicitar Borrado
+    useEffect(() => {
+        loadGroups();
+    }, []);
+
+    // ============================
+    // 🔵 Crear / Editar (Guardar)
+    // ============================
+    const handleSave = async () => {
+        if (!formData.nivel || !formData.area || !formData.grupo) return;
+
+        const payload = {
+            name: formData.grupo,
+            area: formData.area,
+            level: formData.nivel
+        };
+
+        try {
+            let response;
+
+            if (formData.id) {
+                // EDITAR
+                response = await groupService.update(formData.id, payload);
+
+                setModalConfig({
+                    isOpen: true,
+                    type: "success",
+                    title: "¡Grupo Actualizado!",
+                    message: `El grupo ${formData.grupo} fue actualizado.`,
+                    onConfirm: () => {
+                        setModalConfig({ ...modalConfig, isOpen: false });
+                        setViewMode("list");
+                        loadGroups();
+                    }
+                });
+
+            } else {
+                // CREAR
+                response = await groupService.create(payload);
+
+                setModalConfig({
+                    isOpen: true,
+                    type: "success",
+                    title: "¡Grupo Creado!",
+                    message: `El grupo ${formData.grupo} fue registrado correctamente.`,
+                    onConfirm: () => {
+                        setModalConfig({ ...modalConfig, isOpen: false });
+                        setViewMode("list");
+                        loadGroups();
+                    }
+                });
+            }
+
+        } catch (error) {
+            console.error("Error al guardar:", error);
+
+            setModalConfig({
+                isOpen: true,
+                type: "danger",
+                title: "Error",
+                message: "No se pudo guardar el grupo.",
+                onConfirm: () => setModalConfig({ ...modalConfig, isOpen: false })
+            });
+        }
+    };
+
+    // ============================
+    // 🔵 Solicitar eliminación
+    // ============================
     const handleDeleteRequest = (item) => {
         setModalConfig({
             isOpen: true,
-            type: 'danger',
-            title: '¿Eliminar Clase?',
-            message: `Vas a eliminar el grupo ${item.grupo} de ${item.area}. También se borrarán sus horarios asignados.`,
-            onCancel: closeModal,
-            onConfirm: () => confirmDelete(item)
+            type: "danger",
+            title: "¿Eliminar grupo?",
+            message: `Estás a punto de eliminar el grupo ${item.grupo}.`,
+            onConfirm: () => confirmDelete(item),
+            onCancel: () =>
+                setModalConfig({ ...modalConfig, isOpen: false })
         });
     };
 
-    // 3. Confirmar Borrado
-    const confirmDelete = (item) => {
-        // Lógica de Backend para borrar...
+    // ============================
+    // 🔵 Confirmar eliminación real
+    // ============================
+    const confirmDelete = async (item) => {
+        try {
+            await groupService.delete(item.id);
 
-        setModalConfig({
-            isOpen: true,
-            type: 'deleteSuccess',
-            title: '¡Borrado Exitoso!',
-            message: 'La clase se eliminó correctamente.',
-            onConfirm: closeModal
-        });
+            setModalConfig({
+                isOpen: true,
+                type: "deleteSuccess",
+                title: "Eliminado",
+                message: "El grupo fue eliminado exitosamente.",
+                onConfirm: () => {
+                    setModalConfig({ ...modalConfig, isOpen: false });
+                    loadGroups();
+                }
+            });
+
+        } catch (error) {
+            console.error("Error al eliminar:", error);
+        }
     };
 
-    // --- LÓGICA DE VISTAS ---
     const handleEdit = (item) => {
         setFormData(item);
-        setViewMode('form');
+        setViewMode("form");
     };
 
     const handleCreate = () => {
-        setFormData({ id: null, nivel: "", area: "", grupo: "" });
-        setViewMode('form');
+        setFormData({
+            id: null,
+            nivel: "",
+            area: "",
+            grupo: ""
+        });
+        setViewMode("form");
     };
 
-    // --- COMPONENTE: FORMULARIO ---
+    // FORMULARIO
     const ClassForm = () => (
-        <div style={{ animation: "fadeIn 0.3s ease-out" }}>
-            {/* Encabezado Formulario */}
-            <div style={{ display: "flex", alignItems: "center", marginBottom: "25px", gap: "15px" }}>
+        <div>
+
+            {/* HEADER */}
+            <div style={{ display: "flex", gap: "15px", marginBottom: "25px" }}>
                 <button
-                    onClick={() => setViewMode('list')}
+                    onClick={() => setViewMode("list")}
                     style={{
-                        background: "white", border: "1px solid #eee", borderRadius: "50%", width: "40px", height: "40px",
-                        cursor: "pointer", color: "#666", display: "flex", alignItems: "center", justifyContent: "center",
-                        boxShadow: "0 2px 5px rgba(0,0,0,0.05)"
+                        background: "white",
+                        border: "1px solid #eee",
+                        borderRadius: "50%",
+                        width: "40px",
+                        height: "40px",
+                        cursor: "pointer"
                     }}
                 >
                     <ArrowLeft size={20} />
                 </button>
+
                 <div>
-                    <h2 style={{ margin: 0, color: colors.secondary, fontSize: "1.6rem", fontWeight: "bold" }}>
+                    <h2 style={{ margin: 0, color: colors.secondary }}>
                         {formData.id ? "Editar Clase" : "Nueva Clase"}
                     </h2>
-                    <p style={{ margin: 0, color: "#888", fontSize: "0.9rem" }}>
-                        {formData.id ? `Editando: ${formData.grupo}` : "Registra un nuevo grupo académico."}
+                    <p style={{ margin: 0, color: "#777" }}>
+                        {formData.id ? `Editando: ${formData.grupo}` : "Registrar un nuevo grupo académico"}
                     </p>
                 </div>
             </div>
 
-            {/* Tarjeta de Formulario */}
-            <div style={{ backgroundColor: "white", padding: "30px", borderRadius: "20px", boxShadow: "0 5px 20px rgba(0,0,0,0.03)" }}>
+            {/* TARJETA */}
+            <div style={{ background: "white", padding: 30, borderRadius: 20 }}>
 
-                {/* Campo: Nivel */}
-                <div style={{ marginBottom: "20px" }}>
-                    <label style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px", fontWeight: "600", color: "#555" }}>
+                {/* NIVEL */}
+                <div style={{ marginBottom: 20 }}>
+                    <label style={{ fontWeight: 600 }}>
                         <GraduationCap size={18} color={colors.primary} /> Nivel Académico
                     </label>
                     <select
                         value={formData.nivel}
                         onChange={(e) => setFormData({ ...formData, nivel: e.target.value })}
                         style={{
-                            width: "100%", padding: "12px 15px", borderRadius: "10px",
-                            border: "1px solid #ddd", backgroundColor: "#F9FAFB",
-                            color: "#333", fontSize: "0.95rem", outline: "none"
+                            width: "100%",
+                            padding: 12,
+                            borderRadius: 10,
+                            border: "1px solid #ddd"
                         }}
                     >
-                        <option value="">-- Selecciona el Nivel --</option>
-                        <option value="TSU">TSU (Técnico Superior Universitario)</option>
-                        <option value="Ingeniería">Ingeniería</option>
+                        <option value="">Selecciona...</option>
+                        <option value="Technical">TSU</option>
+                        <option value="Engineering">Ingeniería</option>
                     </select>
                 </div>
 
-                {/* Campo: Área */}
-                <div style={{ marginBottom: "20px" }}>
-                    <label style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px", fontWeight: "600", color: "#555" }}>
+                {/* AREA */}
+                <div style={{ marginBottom: 20 }}>
+                    <label style={{ fontWeight: 600 }}>
                         <Book size={18} color={colors.primary} /> Área / Carrera
                     </label>
-                    <input
-                        type="text"
-                        placeholder="Ej: Entornos Virtuales y Negocios Digitales"
+
+                    <select
                         value={formData.area}
                         onChange={(e) => setFormData({ ...formData, area: e.target.value })}
                         style={{
-                            width: "100%", padding: "12px 15px", borderRadius: "10px",
-                            border: "1px solid #ddd", backgroundColor: "#F9FAFB",
-                            color: "#333", fontSize: "0.95rem", outline: "none"
+                            width: "100%",
+                            padding: 12,
+                            borderRadius: 10,
+                            border: "1px solid #ddd",
+                            background: "#F9FAFB",
+                            color: "#333"
                         }}
-                    />
+                    >
+                        <option value="">Selecciona área...</option>
+                        <option value="DSM">DSM</option>
+                        <option value="EVND">EVND</option>
+                    </select>
                 </div>
 
-                {/* Campo: Grupo */}
-                <div style={{ marginBottom: "20px" }}>
-                    <label style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px", fontWeight: "600", color: "#555" }}>
+                {/* GRUPO */}
+                <div style={{ marginBottom: 20 }}>
+                    <label style={{ fontWeight: 600 }}>
                         <Users size={18} color={colors.primary} /> Grupo
                     </label>
                     <input
@@ -176,111 +272,134 @@ const Clases = ({ colors }) => {
                         value={formData.grupo}
                         onChange={(e) => setFormData({ ...formData, grupo: e.target.value })}
                         style={{
-                            width: "100%", padding: "12px 15px", borderRadius: "10px",
-                            border: "1px solid #ddd", backgroundColor: "#F9FAFB",
-                            color: "#333", fontSize: "0.95rem", outline: "none"
+                            width: "100%",
+                            padding: 12,
+                            borderRadius: 10,
+                            border: "1px solid #ddd"
                         }}
                     />
                 </div>
 
             </div>
 
-            {/* Botones de Acción */}
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "15px", marginTop: "30px" }}>
+            {/* BOTONES */}
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 30, gap: 15 }}>
                 <button
-                    onClick={() => setViewMode('list')}
+                    onClick={() => setViewMode("list")}
                     style={{
-                        backgroundColor: "transparent", color: "#666", padding: "12px 30px",
-                        borderRadius: "30px", border: "1px solid #ddd", fontSize: "0.95rem", fontWeight: "600",
-                        cursor: "pointer", transition: "all 0.2s"
-                    }}>
+                        padding: "12px 25px",
+                        borderRadius: 30,
+                        border: "1px solid #ddd"
+                    }}
+                >
                     Cancelar
                 </button>
+
                 <button
                     onClick={handleSave}
                     style={{
-                        backgroundColor: colors.secondary, color: "white", padding: "12px 40px",
-                        borderRadius: "30px", border: "none", fontSize: "0.95rem", fontWeight: "600",
-                        cursor: "pointer", display: "flex", alignItems: "center", gap: "8px",
-                        boxShadow: "0 4px 15px rgba(0,126,140,0.3)"
-                    }}>
-                    <Save size={18} /> Guardar Clase
+                        padding: "12px 35px",
+                        borderRadius: 30,
+                        background: colors.secondary,
+                        color: "white",
+                        border: "none"
+                    }}
+                >
+                    <Save size={18} /> Guardar
                 </button>
             </div>
+
         </div>
     );
 
-    // --- COMPONENTE: LISTA ---
+    // LISTA
     const ListView = () => (
-        <div style={{ animation: "fadeIn 0.3s ease-out" }}>
-            {/* Header Lista */}
-            <div style={{ marginBottom: "30px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+
+            {/* HEADER */}
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 30 }}>
                 <div>
-                    <h1 style={{ color: colors.secondary, margin: "0 0 5px 0", fontSize: "1.8rem", fontWeight: "bold" }}>
-                        Gestión de Clases
-                    </h1>
-                    <p style={{ color: "#888", margin: 0 }}>Administra los grupos y grados académicos.</p>
+                    <h1 style={{ color: colors.secondary }}>Gestión de Clases</h1>
+                    <p style={{ color: "#777" }}>Administra los grupos académicos.</p>
                 </div>
+
                 <button
                     onClick={handleCreate}
                     style={{
-                        backgroundColor: colors.primary, color: "white", border: "none",
-                        padding: "10px 25px", borderRadius: "50px", cursor: "pointer",
-                        display: "flex", alignItems: "center", gap: "8px", fontWeight: "bold",
-                        boxShadow: "0 4px 15px rgba(0,184,200,0.3)"
-                    }}>
-                    <Plus size={20} /> Nueva Clase
+                        background: colors.primary,
+                        color: "white",
+                        padding: "10px 25px",
+                        borderRadius: 40,
+                        border: "none"
+                    }}
+                >
+                    <Plus size={20} /> Nuevo
                 </button>
             </div>
 
-            {/* Buscador */}
-            <div style={{ marginBottom: "25px", position: "relative", maxWidth: "500px" }}>
-                <Search size={20} style={{ position: "absolute", left: "20px", top: "50%", transform: "translateY(-50%)", color: "#aaa" }} />
-                <input
-                    type="text"
-                    placeholder="Buscar por grupo o carrera..."
-                    style={{
-                        width: "100%", padding: "15px 15px 15px 50px", borderRadius: "50px",
-                        border: "1px solid #eee", backgroundColor: "white", outline: "none", fontSize: "0.95rem",
-                        boxShadow: "0 2px 10px rgba(0,0,0,0.02)"
-                    }}
-                />
-            </div>
-
-            {/* Tabla */}
-            <div style={{ backgroundColor: "white", borderRadius: "20px", boxShadow: "0 5px 20px rgba(0,0,0,0.03)", overflow: "hidden" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            {/* TABLA */}
+            <div style={{
+                background: "white",
+                borderRadius: 20,
+                padding: 10
+            }}>
+                <table style={{ width: "100%" }}>
                     <thead>
-                        <tr style={{ backgroundColor: "#F8F9FA", color: "#666", textAlign: "left", fontSize: "0.9rem", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                            <th style={{ padding: "20px 25px", fontWeight: "600" }}>Nivel</th>
-                            <th style={{ padding: "20px 25px", fontWeight: "600" }}>Área / Carrera</th>
-                            <th style={{ padding: "20px 25px", fontWeight: "600" }}>Grupo</th>
-                            <th style={{ padding: "20px 25px", fontWeight: "600", textAlign: "right" }}>Acciones</th>
+                        <tr style={{ background: "#F4F4F4" }}>
+                            <th style={{ padding: 15 }}>Nivel</th>
+                            <th style={{ padding: 15 }}>Área</th>
+                            <th style={{ padding: 15 }}>Grupo</th>
+                            <th style={{ padding: 15, textAlign: "right" }}>Acciones</th>
                         </tr>
                     </thead>
+
                     <tbody>
                         {clasesList.map((item) => (
-                            <tr key={item.id} style={{ borderBottom: "1px solid #f0f0f0", transition: "background 0.2s" }}
-                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#FAFAFA"}
-                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "white"}
+                            <tr
+                                key={item.id}
+                                onClick={() => setSelectedGroup(item.grupo)}
+                                style={{
+                                    borderBottom: "1px solid #eee",
+                                    cursor: "pointer",
+                                    transition: "background 0.2s",
+                                }}
+                                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#F5F7F8")}
+                                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "white")}
                             >
-                                <td style={{ padding: "20px 25px", color: "#333", fontWeight: "500" }}>
-                                    <span>{item.nivel}</span>
+                                <td style={{ padding: 15 }}>{item.nivel}</td>
+                                <td style={{ padding: 15 }}>{item.area}</td>
+                                <td style={{ padding: 15, fontWeight: "bold", color: colors.secondary }}>
+                                    {item.grupo}
                                 </td>
-                                <td style={{ padding: "20px 25px", color: "#666" }}>{item.area}</td>
-                                <td style={{ padding: "20px 25px", color: colors.secondary, fontWeight: "600", fontSize: "1.1rem" }}>{item.grupo}</td>
-                                <td style={{ padding: "20px 25px", textAlign: "right" }}>
+
+                                <td style={{ padding: 15, textAlign: "right" }}>
                                     <button
-                                        onClick={() => handleEdit(item)}
-                                        style={{ background: "#E0F7FA", border: "none", cursor: "pointer", color: colors.secondary, padding: "8px", borderRadius: "8px", marginRight: "10px" }}
-                                        title="Editar Clase"
+                                        onClick={(e) => {
+                                            e.stopPropagation(); // ← evita abrir GrupoDetalle cuando editas
+                                            handleEdit(item);
+                                        }}
+                                        style={{
+                                            background: "#E0F7FA",
+                                            border: "none",
+                                            padding: 8,
+                                            borderRadius: 8,
+                                            marginRight: 10,
+                                        }}
                                     >
                                         <Edit size={18} />
                                     </button>
+
                                     <button
-                                        onClick={() => handleDeleteRequest(item)}
-                                        style={{ background: "#FFEBEE", border: "none", cursor: "pointer", color: "#D32F2F", padding: "8px", borderRadius: "8px" }}
-                                        title="Eliminar Clase"
+                                        onClick={(e) => {
+                                            e.stopPropagation(); // ← evita abrir GrupoDetalle cuando borras
+                                            handleDeleteRequest(item);
+                                        }}
+                                        style={{
+                                            background: "#FFEBEE",
+                                            border: "none",
+                                            padding: 8,
+                                            borderRadius: 8,
+                                        }}
                                     >
                                         <Trash2 size={18} />
                                     </button>
@@ -288,22 +407,26 @@ const Clases = ({ colors }) => {
                             </tr>
                         ))}
                     </tbody>
+
                 </table>
             </div>
+
         </div>
     );
 
     return (
         <>
-            {viewMode === 'list' ? <ListView /> : <ClassForm />}
-            <FeedbackModal
-                isOpen={modalConfig.isOpen}
-                type={modalConfig.type}
-                title={modalConfig.title}
-                message={modalConfig.message}
-                onConfirm={modalConfig.onConfirm}
-                onCancel={modalConfig.onCancel}
-            />
+            {!selectedGroup ? (
+                viewMode === "list" ? <ListView /> : <ClassForm />
+            ) : (
+                <GrupoDetalle
+                    colors={colors}
+                    grupo={selectedGroup}
+                    onBack={() => setSelectedGroup(null)}
+                />
+            )}
+
+            <FeedbackModal {...modalConfig} />
         </>
     );
 };

@@ -2,41 +2,32 @@
 import api from "./axiosConfig";
 
 const ScheduleService = {
-
-    // -------------------------
-    // CONSULTAS
-    // -------------------------
-
     getAll() {
-        return api.get("/schedule/getAll");
+        return api.get("/schedules/getAll");
     },
 
     getOne(id) {
-        return api.get(`/schedule/getOne/${id}`);
+        return api.get(`/schedules/getOne/${id}`);
     },
 
     getByGroupName(name) {
-        return api.get(`/schedule/getByGrupoName?name=${name}`);
+        return api.get(`/schedules/getByGrupoName?name=${name}`);
     },
 
     getHorarioAlumno(matricula) {
-        return api.get(`/schedule/getHorarioAlumno/${matricula}`);
+        return api.get(`/schedules/getHorarioAlumno/${matricula}`);
     },
 
-    // -------------------------
-    // CRUD ADMIN (TOKEN)
-    // -------------------------
-
     insert(data) {
-        return api.post("/schedule/insertSchedule", data);
+        return api.post("/schedules/insertSchedule", data);
     },
 
     update(id, data) {
-        return api.put(`/schedule/updateSchedule/${id}`, data);
+        return api.put(`/schedules/updateSchedule/${id}`, data);
     },
 
     delete(id) {
-        return api.delete(`/schedule/deleteSchedule/${id}`);
+        return api.delete(`/schedules/deleteSchedule/${id}`);
     }
 };
 

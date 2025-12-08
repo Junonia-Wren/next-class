@@ -1,32 +1,29 @@
-// services/admin.service.js
 import api from "./axiosConfig";
 
-const AdminService = {
-    
-    // Obtener todos los jefes de grupo
-    getAllLeaders() {
-        return api.get("/admin/getAllLeaders");
+const adminService = {
+    getLeader(grupo) {
+        return api.get(`/admin/getLeaderByGrupo/${grupo}`);
     },
 
-    // Obtener jefe de grupo por id de grupo
-    getLeaderByGroup(grupoId) {
-        return api.get(`/admin/getLeaderByGrupo/${grupoId}`);
+    getStudents(grupo) {
+        return api.get(`/admin/getStudentsByGrupo/${grupo}`);
     },
 
-    // Asignar un nuevo jefe de grupo
-    asignarJefe(matricula, grupo) {
-        return api.post("/admin/asignarJefe", { matricula, grupo });
+    getTeachers() {
+        return api.get("/admin/teachers");
     },
 
-    // Actualizar jefe de grupo
-    updateJefe(matricula, data) {
-        return api.put(`/admin/updateJefe/${matricula}`, data);
+    setLeader(matricula) {
+        return api.post(`/admin/setLeader/${matricula}`);
     },
 
-    // Eliminar jefe de grupo
-    deleteJefe(matricula) {
+    deleteLeader(matricula) {
         return api.delete(`/admin/deleteJefe/${matricula}`);
+    },
+
+    updateLeader(matricula, data) {
+        return api.put(`/admin/updateJefe/${matricula}`, data);
     }
 };
 
-export default AdminService;
+export default adminService;

@@ -4,11 +4,6 @@ const subjectSchema = new Schema(
   {
     name: { type: String, required: true },
 
-    teacher: { type: String, required: true },
-
-    // === CAMPOS NUEVOS PARA SOPORTAR TU FRONT ===
-    profesorFoto: { type: String, default: "" },
-
     porcentajes: {
       ser: {
         valor: { type: Number, default: 0 },

@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import userServices from "../services/userServices";
+import groupService from "../services/groupService";
 import { FaUser, FaIdBadge, FaLock, FaSchool } from "react-icons/fa";
 import Logoprincipal from "../assets/Logoprincipal.png";
 import garra from "../assets/garra.png";
@@ -9,12 +10,11 @@ export default function RegisterForm() {
         matricula: "",
         name: "",
         password: "",
-        area: "",
-        nivel: "",
         grupo: "",
     });
 
-    // 🎨 Paleta del Admin Panel
+    const [groups, setGroups] = useState([]);
+
     const colors = {
         primary: "#00B8C8",
         secondary: "#007E8C",
@@ -23,31 +23,45 @@ export default function RegisterForm() {
         textDark: "#3333",
     };
 
+    // === Cargar grupos desde backend ===
+    useEffect(() => {
+        const loadGroups = async () => {
+            try {
+                const response = await groupService.getAll();
+                // La API responde { data: [...] }
+                setGroups(response.data.data || []);
+            } catch (error) {
+                console.error("Error al cargar grupos:", error);
+            }
+        };
+
+        loadGroups();
+    }, []);
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
-const handleSubmit = async (e) => {
-    e.preventDefault();
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        console.log(formData.grupo);
+        const payload = {
+            matricula: formData.matricula,
+            name: formData.name,
+            password: formData.password,
+            group: formData.grupo, // ← ahora sí se envía el grupo elegido
+        };
 
-    // Solo los campos que tu backend acepta (matricula, name, password)
-    const payload = {
-        matricula: formData.matricula,
-        name: formData.name,
-        password: formData.password
+        try {
+            const response = await userServices.register(payload);
+            console.log("Usuario registrado:", response.data);
+            alert("Registro exitoso");
+        } catch (error) {
+            console.error("Error en registro:", error);
+            alert("Error al registrar usuario");
+        }
     };
-
-    try {
-        const response = await userServices.register(payload);
-        console.log("Usuario registrado:", response.data);
-        alert("Registro exitoso");
-    } catch (error) {
-        console.error("Error en registro:", error);
-        alert("Error al registrar usuario");
-    }
-};
-
 
     return (
         <div
@@ -59,7 +73,7 @@ const handleSubmit = async (e) => {
                 fontFamily: "Poppins, sans-serif",
             }}
         >
-            {/* FONDO SUPERIOR */}
+            {/* Fondo superior */}
             <div
                 style={{
                     position: "absolute",
@@ -67,7 +81,6 @@ const handleSubmit = async (e) => {
                     left: 0,
                     width: "100%",
                     height: "75vh",
-                    minHeight: "480px",
                     backgroundColor: colors.darkTeal,
                     borderBottomLeftRadius: "60px",
                     borderBottomRightRadius: "60px",
@@ -75,7 +88,7 @@ const handleSubmit = async (e) => {
                 }}
             />
 
-            {/* LOGO PRINCIPAL */}
+            {/* Logo */}
             <img
                 src={Logoprincipal}
                 alt="Logo principal"
@@ -88,7 +101,7 @@ const handleSubmit = async (e) => {
                 }}
             />
 
-            {/* TARJETA */}
+            {/* Tarjeta */}
             <div
                 style={{
                     position: "relative",
@@ -102,7 +115,7 @@ const handleSubmit = async (e) => {
                     marginTop: "2.5rem",
                 }}
             >
-                {/* GARrita decorativa */}
+                {/* Garrita decorativa */}
                 <img
                     src={garra}
                     alt="Mini logo"
@@ -115,7 +128,7 @@ const handleSubmit = async (e) => {
                     }}
                 />
 
-                {/* == CAMPOS == */}
+                {/* Inputs */}
                 <InputField
                     icon={<FaIdBadge />}
                     placeholder="Matrícula"
@@ -141,31 +154,7 @@ const handleSubmit = async (e) => {
                     onChange={handleChange}
                 />
 
-                {/* SELECTS */}
-                <SelectField
-                    icon={<FaSchool />}
-                    name="area"
-                    value={formData.area}
-                    onChange={handleChange}
-                    options={[
-                        { value: "", label: "Seleccione área" },
-                        { value: "DSM", label: "DSM" },
-                        { value: "EVND", label: "EVND" },
-                    ]}
-                />
-
-                <SelectField
-                    icon={<FaSchool />}
-                    name="nivel"
-                    value={formData.nivel}
-                    onChange={handleChange}
-                    options={[
-                        { value: "", label: "Seleccione nivel" },
-                        { value: "Técnico", label: "Técnico" },
-                        { value: "Ingeniería", label: "Ingeniería" },
-                    ]}
-                />
-
+                {/* SOLO SELECT DE GRUPO */}
                 <SelectField
                     icon={<FaSchool />}
                     name="grupo"
@@ -173,28 +162,14 @@ const handleSubmit = async (e) => {
                     onChange={handleChange}
                     options={[
                         { value: "", label: "Seleccione grupo" },
-                        { value: "1A", label: "1A" },
-                        { value: "1B", label: "1B" },
-                        { value: "2A", label: "2A" },
-                        { value: "2B", label: "2B" },
-                        { value: "3A", label: "3A" },
-                        { value: "3B", label: "3B" },
-                        { value: "4A", label: "4A" },
-                        { value: "4B", label: "4B" },
-                        { value: "5A", label: "5A" },
-                        { value: "5B", label: "5B" },
-                        { value: "6A", label: "6A" },
-                        { value: "6B", label: "6B" },
-                        { value: "8A", label: "8A" },
-                        { value: "8B", label: "8B" },
-                        { value: "9A", label: "9A" },
-                        { value: "9B", label: "9B" },
-                        { value: "10A", label: "10A" },
-                        { value: "10B", label: "10B" },
+                        ...groups.map((g) => ({
+                            value: g._id,
+                            label: g.name,
+                        })),
                     ]}
                 />
 
-                {/* BOTÓN REGISTRAR */}
+                {/* Botón */}
                 <div className="text-center mt-4">
                     <button
                         onClick={handleSubmit}
@@ -205,7 +180,6 @@ const handleSubmit = async (e) => {
                             borderRadius: "25px",
                             backgroundColor: colors.secondary,
                             border: "none",
-                            boxShadow: "0 6px 15px rgba(0,0,0,0.25)",
                             fontSize: "1rem",
                             letterSpacing: "0.5px",
                         }}
@@ -221,13 +195,10 @@ const handleSubmit = async (e) => {
 }
 
 /* =======================
-     COMPONENTE INPUT
+      INPUT FIELD
 ======================= */
 function InputField({ icon, placeholder, type = "text", name, value, onChange }) {
-    const colors = {
-        primary: "#00B8C8",
-        textDark: "#333",
-    };
+    const colors = { primary: "#00B8C8", textDark: "#333" };
 
     return (
         <div style={{ position: "relative", marginBottom: "1.8rem" }}>
@@ -262,23 +233,17 @@ function InputField({ icon, placeholder, type = "text", name, value, onChange })
                     fontWeight: "600",
                     color: colors.textDark,
                     outline: "none",
-                    transition: "0.3s ease",
                 }}
-                onFocus={(e) => (e.target.style.borderBottom = `2px solid ${colors.primary}`)}
-                onBlur={(e) => (e.target.style.borderBottom = "2px solid #ccc")}
             />
         </div>
     );
 }
 
 /* =======================
-     COMPONENTE SELECT
+      SELECT FIELD
 ======================= */
 function SelectField({ icon, name, value, onChange, options }) {
-    const colors = {
-        primary: "#00B8C8",
-        textDark: "#555",
-    };
+    const colors = { primary: "#00B8C8", textDark: "#555" };
 
     return (
         <div style={{ position: "relative", marginBottom: "1.8rem" }}>
@@ -312,13 +277,10 @@ function SelectField({ icon, name, value, onChange, options }) {
                     color: colors.textDark,
                     outline: "none",
                     appearance: "none",
-                    transition: "0.3s ease",
                 }}
-                onFocus={(e) => (e.target.style.borderBottom = `2px solid ${colors.primary}`)}
-                onBlur={(e) => (e.target.style.borderBottom = "2px solid #ccc")}
             >
                 {options.map((opt, i) => (
-                    <option key={i} value={opt.value} style={{ color: "#555" }}>
+                    <option key={i} value={opt.value}>
                         {opt.label}
                     </option>
                 ))}

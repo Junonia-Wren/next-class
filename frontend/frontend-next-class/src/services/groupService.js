@@ -1,8 +1,7 @@
-// services/group.service.js
+// src/services/groupService.js
 import api from "./axiosConfig";
 
-const GroupService = {
-
+const groupService = {
     getAll() {
         return api.get("/groups/getAll");
     },
@@ -11,9 +10,17 @@ const GroupService = {
         return api.get(`/groups/getOne/${id}`);
     },
 
-    getByName(name) {
-        return api.get(`/groups/getByName/${name}`);
+    create(data) {
+        return api.post("/groups/create", data);
+    },
+
+    update(id, data) {
+        return api.put(`/groups/update/${id}`, data);
+    },
+
+    delete(id) {
+        return api.delete(`/groups/delete/${id}`);
     }
 };
 
-export default GroupService;
+export default groupService;

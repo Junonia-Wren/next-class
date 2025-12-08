@@ -20,15 +20,15 @@ router.get("/getLeaderByGrupo/:grupo", adminControllers.getGroupLeaderByGrupo);
 
 // Asignar jefe de grupo
 // Llama a userDaos.updateRoleByMatricula(matricula, "jefe_grupo")
-// Verifica antes si ya hay jefe en ese grupo
-router.post("/asignarJefe", verifyToken, isAdmin, adminControllers.asignarJefeGrupo);
 
-// Actualizar datos del jefe de grupo
-// Llama a userDaos.updateOne(matricula, data)
-router.put("/updateJefe/:matricula", verifyToken, isAdmin, adminControllers.updateJefeGrupo);
+router.post("/setLeader/:matricula", verifyToken, isAdmin, adminControllers.setLeader);
 
 // Eliminar jefe de grupo (cambiar rol a "alumno")
 // Llama a userDaos.updateRoleByMatricula(matricula, "alumno")
 router.delete("/deleteJefe/:matricula", verifyToken, isAdmin, adminControllers.deleteJefeGrupo);
+// Obtener todos los alumnos (incluye estudiantes y jefe si lo hubiera)
+router.get("/getStudentsByGrupo/:grupo", adminControllers.getStudentsByGrupo);
+
+router.get("/teachers", verifyToken, isAdmin, adminControllers.getTeachers);
 
 export default router;

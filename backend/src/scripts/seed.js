@@ -59,10 +59,97 @@ const seedAll = async () => {
     //   3️⃣ MATERIAS
     // ========================
     const materias = await Subject.insertMany([
-      { name: "Programación Web", groups: [G["5A"]._id, G["5B"]._id] },
-      { name: "Base de Datos", groups: [G["5A"]._id] },
-      { name: "Proyecto Integrador", groups: [G["6A"]._id] }
+      {
+        name: "Programación Web",
+        porcentajes: {
+          ser: {
+            valor: 40,
+            descripcion: "Tareas, participación, actitud y responsabilidad"
+          },
+          saber: {
+            valor: 10,
+            descripcion: "Examen teórico"
+          },
+          saberHacer: {
+            valor: 50,
+            descripcion: "Proyecto final integrador"
+          }
+        },
+        unidades: [
+          {
+            porcentaje: 30,
+            fechas: "8 Septiembre al 30 de Octubre"
+          },
+          {
+            porcentaje: 70,
+            fechas: "2 Noviembre al 19 de Diciembre"
+          }
+        ],
+        notas: "Se tendrá en cuenta asistencia mínima del 80% para poder ser evaluado.",
+        groups: [G["5A"]._id, G["5B"]._id]
+      },
+
+      {
+        name: "Base de Datos",
+        porcentajes: {
+          ser: {
+            valor: 40,
+            descripcion: "Prácticas semanales y participación"
+          },
+          saber: {
+            valor: 20,
+            descripcion: "Examen teórico sobre normalización"
+          },
+          saberHacer: {
+            valor: 40,
+            descripcion: "Proyecto final de modelado y SQL"
+          }
+        },
+        unidades: [
+          {
+            porcentaje: 50,
+            fechas: "10 Septiembre al 25 Octubre"
+          },
+          {
+            porcentaje: 50,
+            fechas: "27 Octubre al 18 Diciembre"
+          }
+        ],
+        notas: "Es obligatorio entregar todas las prácticas para aprobar.",
+        groups: [G["5A"]._id]
+      },
+
+      {
+        name: "Proyecto Integrador",
+        porcentajes: {
+          ser: {
+            valor: 30,
+            descripcion: "Compromiso y participación en el equipo"
+          },
+          saber: {
+            valor: 20,
+            descripcion: "Fundamentos teóricos del proyecto"
+          },
+          saberHacer: {
+            valor: 50,
+            descripcion: "Ejecución del proyecto final"
+          }
+        },
+        unidades: [
+          {
+            porcentaje: 40,
+            fechas: "1 Septiembre al 20 Octubre"
+          },
+          {
+            porcentaje: 60,
+            fechas: "21 Octubre al 20 Diciembre"
+          }
+        ],
+        notas: "Se evaluará trabajo colaborativo.",
+        groups: [G["6A"]._id]
+      }
     ]);
+
     console.log(">> Materias creadas:", materias.length);
 
     const M = {

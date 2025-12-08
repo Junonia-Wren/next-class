@@ -1,4 +1,5 @@
 import userDaos from "../daos/user.daos.js";
+import { User } from "../models/index.models.js";
 
 const adminControllers = {};
 
@@ -113,5 +114,83 @@ adminControllers.deleteJefeGrupo = (req, res) => {
             });
         });
 };
+
+// Obtener todos los alumnos de un grupo
+adminControllers.getStudentsByGrupo = (req, res) => {
+    userDaos.getStudentsByGrupo(req.params.grupo)
+        .then((students) => {
+            res.json({ data: students });
+        })
+        .catch((error) => {
+            res.status(500).json({
+                message: "Error al obtener alumnos del grupo",
+                error
+            });
+        });
+};
+
+adminControllers.setLeader = async (req, res) => {
+    const { matricula } = req.params;
+
+    try {
+        console.log("Si llego");
+        // 1. Buscar usuario por matrícula
+        const user = await User.findOne({ matricula }).populate("group");
+        console.log("Si llego");
+        if (!user)
+            return res.status(404).json({ message: "Usuario no encontrado" });
+
+        if (!user.group)
+            return res.status(400).json({
+                message: "El usuario no pertenece a ningún grupo"
+            });
+
+        const groupId = user.group._id;
+
+        // 2. Buscar si ya existe líder del mismo grupo
+        const currentLeader = await User.findOne({
+            group: groupId,
+            role: "group_leader"
+        });
+        console.log("Si llego");
+        // 3. Si ya existe líder → bajarlo a student
+        if (currentLeader) {
+            await User.findOneAndUpdate(
+                { matricula: currentLeader.matricula },
+                { role: "student" }
+            );
+        }
+
+        // 4. Promover nuevo líder
+        const updated = await User.findOneAndUpdate(
+            { matricula },
+            { role: "group_leader" },
+            { new: true }
+        ).populate("group");
+
+        res.json({
+            message: "Nuevo jefe de grupo asignado",
+            data: updated
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            message: "Error interno al asignar líder",
+            error:error.message
+        });
+    }
+};
+
+adminControllers.getTeachers = async (req, res) => {
+    try {
+        const teachers = await User.find({ role: "teacher" })
+            .select("_id name matricula");
+
+        res.json({ data: teachers });
+    } catch (error) {
+        res.status(500).json({ message: "Error al obtener profesores", error });
+    }
+};
+
 
 export default adminControllers;
