@@ -2,9 +2,15 @@ import React, { useState, useEffect } from "react";
 import ClaseActual from "../components/ClaseActual";
 import BottomNav from "../components/BottomNav";
 import ScheduleService from "../services/scheduleService";
-import garra from "../assets/garra.png"; // Asegúrate de tener este asset
+import garra from "../assets/garra.png";
+import { LogOut } from "lucide-react"; // Icono de salida
+import { useNavigate } from "react-router-dom"; // Para redirigir
+import logo from '../assets/Logo.png';
 
 export default function DashboardAlumnos() {
+    const navigate = useNavigate();
+    
+    // --- ESTADOS ---
     const [scheduleData, setScheduleData] = useState(null); 
     const [diaSeleccionado, setDiaSeleccionado] = useState(getDiaActualKey()); 
     const [alumnoInfo, setAlumnoInfo] = useState({ nombre: "", grupo: "" });
@@ -14,6 +20,7 @@ export default function DashboardAlumnos() {
     const [claseSeleccionada, setClaseSeleccionada] = useState(null); 
     const [listaInferior, setListaInferior] = useState([]); 
 
+    // --- HELPERS ---
     function getDiaActualKey() {
         const dias = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
         return dias[new Date().getDay()];
@@ -29,13 +36,22 @@ export default function DashboardAlumnos() {
         try { return JSON.parse(atob(token.split('.')[1])); } catch (e) { return null; }
     };
 
+    // --- LOGOUT ---
+    const handleLogout = () => {
+        if(window.confirm("¿Cerrar sesión?")) {
+            localStorage.removeItem("authToken");
+            navigate("/"); // Volver al login
+        }
+    };
+
+    // --- CARGA DE DATOS ---
     useEffect(() => {
         const init = async () => {
             try {
                 const token = localStorage.getItem("authToken");
-                if (!token) return;
-                const decoded = parseJwt(token);
+                if (!token) return navigate("/");
                 
+                const decoded = parseJwt(token);
                 const res = await ScheduleService.getHorarioAlumno(decoded?.matricula);
                 
                 if (res.data) {
@@ -56,6 +72,7 @@ export default function DashboardAlumnos() {
         init();
     }, []);
 
+    // --- RELOJ ---
     useEffect(() => {
         if (!scheduleData) return;
 
@@ -95,6 +112,7 @@ export default function DashboardAlumnos() {
 
     }, [scheduleData, diaSeleccionado]);
 
+    // --- RENDERIZADO ---
     let claseAVisualizar = null;
     let tituloTarjeta = "Actual";
 
@@ -118,26 +136,46 @@ export default function DashboardAlumnos() {
     return (
         <div style={{ backgroundColor: "#00B8C8", minHeight: "100vh", position: "relative" }}>
             
-            {/* --- FONDO SUPERIOR (HEADER) --- */}
+            {/* --- HEADER --- */}
             <div className="pt-4 px-4 pb-5" style={{ background: "linear-gradient(to right, #00B8C8, #00838F)" }}>
-                {/* Logo o Garra Decorativa */}
-                <img src={garra} alt="Garra" style={{ position: "absolute", top: "10px", right: "20px", width: "60px", opacity: 0.2 }} />
                 
-                {/* Saludo */}
-                <div className="d-flex justify-content-between align-items-end mb-4">
+                {/* Decoración Derecha */}
+                <img src={garra} alt="Garra" style={{ position: "absolute", top: "10px", right: "20px", width: "60px", opacity: 0.15 }} />
+                
+                <div className="d-flex align-items-center mb-4" style={{position: "relative", zIndex: 2}}>
+                    
+                    {/* BOTÓN LOGOUT (IZQUIERDA) */}
+                   <button 
+                    onClick={handleLogout}
+                    className="bg-white rounded-circle shadow-sm border-0 d-flex align-items-center justify-content-center me-3"
+                    style={{ width: "36px", height: "36px", cursor: "pointer", flexShrink: 0 }}
+                    title="Cerrar Sesión"
+                    >
+                    <img 
+                        src={logo} 
+                        alt="logout logo"
+                        style={{ width: "35px", height: "35px", objectFit: "contain" }}
+                    />
+                    </button> 
+   
+
+
+                    {/* SALUDO */}
                     <div>
-                        <p className="text-white m-0 opacity-75 small">Bienvenido</p>
-                        <h2 className="fw-bold text-white m-0">
+                        <p className="text-white m-0 opacity-75 small" style={{fontSize: "0.8rem", lineHeight: "1"}}>Bienvenido</p>
+                        <h2 className="fw-bold text-white m-0" style={{fontSize: "1.4rem", lineHeight: "1.2"}}>
                             {alumnoInfo.nombre.split(" ")[0]}
                         </h2>
                     </div>
-                    <div className="text-white text-end">
+
+                    {/* GRUPO (Derecha) */}
+                    <div className="ms-auto text-white text-end">
                         <p className="m-0 fw-bold" style={{fontSize: "1.2rem"}}>{alumnoInfo.grupo}</p>
-                        <p className="m-0 small opacity-75">Tu Grupo</p>
+                        <p className="m-0 small opacity-75" style={{fontSize: "0.7rem"}}>Tu Grupo</p>
                     </div>
                 </div>
 
-                {/* DÍAS DE LA SEMANA (TRANSPARENTES) */}
+                {/* BARRA DE DÍAS */}
                 <div className="d-flex justify-content-between">
                     {["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"].map((dia) => {
                         const isSelected = diaSeleccionado === dia;
@@ -153,37 +191,36 @@ export default function DashboardAlumnos() {
                                     position: "relative"
                                 }}
                             >
-                                <span style={{fontSize: "1rem"}}>{dia.substring(0, 3).toUpperCase()}</span>
-                                {isSelected && <div style={{width: "6px", height: "6px", background: "white", borderRadius: "50%", marginTop: "4px"}}></div>}
+                                <span style={{fontSize: "0.9rem"}}>{dia.substring(0, 3).toUpperCase()}</span>
+                                {isSelected && <div style={{width: "5px", height: "5px", background: "white", borderRadius: "50%", marginTop: "3px"}}></div>}
                             </button>
                         );
                     })}
                 </div>
             </div>
 
-            {/* --- CUERPO BLANCO CURVO (ESTILO WALLET) --- */}
+            {/* --- CUERPO BLANCO --- */}
             <div 
                 className="bg-white w-100"
                 style={{
                     borderTopLeftRadius: "30px",
                     borderTopRightRadius: "30px",
-                    minHeight: "calc(100vh - 180px)", // Ocupa el resto
-                    marginTop: "-20px", // Efecto overlap
-                    padding: "30px 20px 100px 20px", // Padding bottom extra para el nav
+                    minHeight: "calc(100vh - 180px)", 
+                    marginTop: "-20px", 
+                    padding: "30px 20px 100px 20px", 
                     position: "relative",
                     zIndex: 10
                 }}
             >
-                {/* TARJETA PRINCIPAL (La que muestra la info) */}
+                {/* CARD CENTRAL */}
                 <div className="mb-5">
                     <ClaseActual materia={claseAVisualizar} titulo={tituloTarjeta} />
                 </div>
 
-                {/* LISTA SIGUIENTES (ESTILO NEGRO) */}
+                {/* LISTA SIGUIENTES */}
                 {listaInferior.length > 0 && (
                     <div>
                         <h6 className="fw-bold mb-3 text-secondary ps-1">Siguientes asignaturas</h6>
-                        
                         <div className="d-flex flex-column gap-3">
                             {listaInferior.map((clase, idx) => (
                                 <div 
@@ -191,22 +228,17 @@ export default function DashboardAlumnos() {
                                     onClick={() => setClaseSeleccionada(clase)} 
                                     className="d-flex align-items-center text-white"
                                     style={{
-                                        backgroundColor: "#000", // Fondo negro
+                                        backgroundColor: "#000", 
                                         borderRadius: "15px",
                                         padding: "15px 20px",
                                         cursor: "pointer",
                                         boxShadow: "0 4px 10px rgba(0,0,0,0.2)"
                                     }}
                                 >
-                                    {/* Izquierda: Salón */}
                                     <div className="fw-bold text-truncate" style={{width: "40%", paddingRight: "10px"}}>
                                         {clase.classroom}
                                     </div>
-
-                                    {/* Divisor Vertical */}
                                     <div style={{width: "1px", height: "25px", background: "rgba(255,255,255,0.3)"}}></div>
-
-                                    {/* Derecha: Materia */}
                                     <div className="ps-3 text-truncate flex-grow-1">
                                         <div className="fw-bold" style={{fontSize: "0.95rem"}}>{clase.subject?.name}</div>
                                         <div style={{fontSize: "0.75rem", opacity: 0.7}}>{clase.time}</div>
