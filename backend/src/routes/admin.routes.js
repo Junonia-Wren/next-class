@@ -31,4 +31,6 @@ router.put("/updateJefe/:matricula", verifyToken, isAdmin, adminControllers.upda
 // Llama a userDaos.updateRoleByMatricula(matricula, "alumno")
 router.delete("/deleteJefe/:matricula", verifyToken, isAdmin, adminControllers.deleteJefeGrupo);
 
+router.get("/dashboard-stats", verifyToken, isAdmin, adminControllers.getDashboardData);
+
 export default router;

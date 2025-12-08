@@ -1,6 +1,53 @@
 import userDaos from "../daos/user.daos.js";
+// Importamos Modelos DIRECTOS para las métricas (más rápido y seguro)
+import User from "../models/user.model.js";
+import Subject from "../models/subject.model.js";
+import Activity from "../models/activity.model.js";
 
 const adminControllers = {};
+
+// =========================================================
+// NUEVO: DATOS DEL DASHBOARD (Métricas y Actividad)
+// =========================================================
+// --- DATOS DEL DASHBOARD (Métricas y Actividad) ---
+adminControllers.getDashboardData = async (req, res) => {
+    try {
+        // 1. CARD 1: Total Alumnos
+        // CORRECCIÓN: Contamos a todos los que NO sean admin (Students + Chiefs)
+        const totalAlumnos = await User.countDocuments({ role: { $ne: "admin" } });
+
+        // 2. CARD 2: Total Asignaturas
+        const totalAsignaturas = await Subject.countDocuments();
+
+        // 3. CARD 3: Notificaciones (Total de actividades registradas)
+        const totalNotificaciones = await Activity.countDocuments();
+
+        // 4. LISTA DE ACTIVIDAD (Últimos 5 eventos)
+        const recentActivity = await Activity.find()
+            .sort({ createdAt: -1 }) // Del más nuevo al más viejo
+            .limit(5);
+
+        res.json({
+            data: {
+                stats: {
+                    alumnos: totalAlumnos,
+                    asignaturas: totalAsignaturas,
+                    notificaciones: totalNotificaciones
+                },
+                activity: recentActivity
+            }
+        });
+
+    } catch (error) {
+        console.error("Error en Dashboard Admin:", error);
+        res.status(500).json({ message: "Error al obtener datos del dashboard" });
+    }
+};
+
+
+// =========================================================
+// TUS FUNCIONES ANTIGUAS (GESTIÓN DE JEFES)
+// =========================================================
 
 // Obtener todos los jefes de grupo
 adminControllers.getAllGroupLeaders = (req, res) => {
@@ -39,7 +86,7 @@ adminControllers.asignarJefeGrupo = (req, res) => {
                     jefe: existingLeader
                 });
             } else {
-                userDaos.updateRoleByMatricula(matricula, "group_leader")
+                userDaos.updateRoleByMatricula(matricula, "group_leader") // OJO: Tu DAO usa "group_leader", asegúrate de que sea consistente
                     .then((updatedUser) => {
                         if (updatedUser) {
                             res.status(200).json({

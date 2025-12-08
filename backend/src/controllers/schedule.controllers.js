@@ -72,22 +72,26 @@ scheduleControllers.getHorarioAlumno = async (req, res) => {
         const user = await User.findOne({ matricula });
         if (!user) return res.status(404).json({ message: "Alumno no encontrado" });
 
-        // 2. Buscar a qué grupo pertenece (el Grupo tiene al alumno en su array 'students')
+        // 2. Buscar grupo
         const group = await Group.findOne({ students: user._id });
         if (!group) return res.status(404).json({ message: "No estás asignado a ningún grupo" });
 
-        // 3. Buscar el horario de ese grupo
+        // 3. Buscar horario
         const schedule = await Schedule.findOne({ group: group._id })
-            // Populate profundo para que el front reciba nombres, no IDs
             .populate('schedule.Lunes.subject')
             .populate('schedule.Martes.subject')
             .populate('schedule.Miércoles.subject')
             .populate('schedule.Jueves.subject')
             .populate('schedule.Viernes.subject');
 
-        if (!schedule) return res.status(404).json({ message: "Tu grupo aún no tiene horario" });
+        // Aunque no tenga horario, devolvemos info del alumno y grupo
+        // Agregamos 'studentName' a la respuesta
+        res.json({ 
+            data: schedule, 
+            groupInfo: group,
+            studentName: user.name // <--- ESTO ES LO NUEVO
+        });
 
-        res.json({ data: schedule, groupInfo: group });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Error al cargar tu horario", error: error.message });

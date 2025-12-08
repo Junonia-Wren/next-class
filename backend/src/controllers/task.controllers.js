@@ -1,115 +1,116 @@
 import taskDaos from "../daos/task.daos.js";
-import userDaos from "../daos/user.daos.js";
-import groupDaos from "../daos/group.daos.js";
+import Group from "../models/group.model.js";
+import Activity from "../models/activity.model.js";
+import User from "../models/user.model.js"; // <--- IMPORTANTE: Necesitamos el modelo de usuario
 
 const taskControllers = {};
 
-// Obtener todas
+// --- CONSULTAS ---
+
 taskControllers.getAll = async (req, res) => {
     try {
         const tasks = await taskDaos.getAll();
         res.json({ data: tasks });
     } catch (error) {
-        res.status(500).json({ message: "Error al obtener tareas", error });
+        res.status(500).json({ message: "Error al obtener tareas", error: error.message });
     }
 };
 
-// Obtener una
 taskControllers.getOne = async (req, res) => {
     try {
         const task = await taskDaos.getOne(req.params.task_id);
         if (!task) return res.status(404).json({ message: "Tarea no encontrada" });
-
         res.json({ data: task });
     } catch (error) {
-        res.status(500).json({ message: "Error", error });
+        res.status(500).json({ message: "Error", error: error.message });
     }
 };
 
-// Insertar (solo jefe de grupo)
+taskControllers.getByGrupo = async (req, res) => {
+    try {
+        const userId = req.user?.uid; 
+        if (!userId) return res.status(400).json({ message: "Usuario no identificado" });
+
+        const group = await Group.findOne({ students: userId });
+        if (!group) return res.json({ data: [] });
+
+        const tasks = await taskDaos.getByGroupId(group._id);
+        res.json({ data: tasks });
+
+    } catch (error) {
+        res.status(500).json({ message: "Error cargando tareas", error: error.message });
+    }
+};
+
+// --- ACCIONES ---
+
+taskControllers.markCompleted = async (req, res) => {
+    try {
+        const { task_id } = req.params;
+        const { completed } = req.body;
+        
+        const updated = await taskDaos.update(task_id, { completed });
+        res.json({ message: "Estado actualizado", data: updated });
+    } catch (error) {
+        res.status(500).json({ message: "Error al actualizar", error: error.message });
+    }
+};
+
+// CREAR TAREA + REGISTRO DE ACTIVIDAD CON NOMBRE
 taskControllers.insertOne = async (req, res) => {
     try {
-        const jefe = await userDaos.getByMatricula(req.user.matricula);
+        const { title, description, dueDate, subject } = req.body;
+        const userId = req.user.uid;
 
-        if (!jefe || jefe.role !== "group_leader") {
-            return res.status(403).json({ message: "No autorizado" });
-        }
+        // 1. Buscar al Usuario para obtener su nombre
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
 
-        const newTask = await taskDaos.insertOne({
-            ...req.body,
-            group: jefe.group,      // ← ahora sí correcto
-            createdBy: jefe._id     // ← ID real del usuario
+        // 2. Buscar el Grupo
+        const group = await Group.findOne({ students: userId });
+        if (!group) return res.status(400).json({ message: "No tienes grupo asignado" });
+
+        const newTaskData = {
+            title,
+            description,
+            dueDate,
+            subject,
+            group: group._id,
+            createdBy: userId
+        };
+
+        // 3. Crear la Tarea
+        const newTask = await taskDaos.create(newTaskData);
+
+        // 4. Registrar Actividad (Ahora con el nombre del usuario)
+        await Activity.create({
+            type: 'TAREA',
+            message: `Tarea creada: "${title}" por: ${user.name}` // <--- AQUÍ ESTÁ EL CAMBIO
         });
 
         res.status(201).json({ message: "Tarea creada", data: newTask });
 
     } catch (error) {
-        res.status(500).json({ message: "Error al insertar tarea", error });
+        console.error("Error creating task:", error);
+        res.status(500).json({ message: "Error al crear tarea", error: error.message });
     }
 };
 
-// Actualizar
 taskControllers.updateOne = async (req, res) => {
     try {
-        const updated = await taskDaos.updateOne(req.params.task_id, req.body);
-        if (!updated) return res.status(404).json({ message: "Tarea no encontrada" });
-
+        const updated = await taskDaos.update(req.params.task_id, req.body);
         res.json({ message: "Tarea actualizada", data: updated });
     } catch (error) {
-        res.status(500).json({ message: "Error", error });
+        res.status(500).json({ message: "Error al actualizar", error: error.message });
     }
 };
 
-// Eliminar
 taskControllers.deleteOne = async (req, res) => {
     try {
-        const deleted = await taskDaos.deleteOne(req.params.task_id);
-        if (!deleted) return res.status(404).json({ message: "Tarea no encontrada" });
-
-        res.json({ message: "Tarea eliminada", data: deleted });
+        await taskDaos.delete(req.params.task_id);
+        res.json({ message: "Tarea eliminada" });
     } catch (error) {
-        res.status(500).json({ message: "Error", error });
-    }
-};
-
-// Obtener tareas por nombre de grupo (ej. 5A)
-taskControllers.getByGrupo = async (req, res) => {
-    try {
-        const { grupo } = req.query;
-
-        if (!grupo) {
-            return res.status(400).json({ message: "Falta parámetro grupo" });
-        }
-
-        const group = await groupDaos.getByName(grupo);
-        if (!group) {
-            return res.status(404).json({ message: "Grupo no existe" });
-        }
-
-        const tasks = await taskDaos.getByGroup(group._id);
-        res.json({ group, tasks });
-
-    } catch (error) {
-        res.status(500).json({ message: "Error", error });
-    }
-};
-
-// Marcar como completada (solo student)
-taskControllers.markCompleted = async (req, res) => {
-    try {
-        if (req.user.role !== "student") {
-            return res.status(403).json({ message: "Solo alumnos pueden completar tareas" });
-        }
-
-        const updated = await taskDaos.markCompleted(req.params.task_id);
-
-        if (!updated)
-            return res.status(404).json({ message: "Tarea no encontrada" });
-
-        res.json({ message: "Tarea completada", data: updated });
-
-    } catch (error) {
-        res.status(500).json({ message: "Error", error });
+        res.status(500).json({ message: "Error al eliminar", error: error.message });
     }
 };
 

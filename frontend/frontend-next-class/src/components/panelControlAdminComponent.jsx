@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Home,
   GraduationCap,
@@ -10,87 +10,147 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-// IMPORTACIÓN DE MÓDULOS
+// IMPORTACIÓN DE MÓDULOS (Tus paneles ya terminados)
 import Horarios from './Horarios';
 import Clases from './Clases';
 import Asignaturas from './Asignaturas';
 
+// SERVICIO PARA DATOS DEL DASHBOARD
+import AdminService from '../services/adminService';
 
-// IMPORTACIÓN DE IMÁGENES (Asegúrate de que los nombres coincidan exactamente)
+// IMPORTACIÓN DE IMÁGENES
 import imgGarra from '../assets/garra.png';
 import imgLogo from '../assets/Logo.png';
-import { left } from '@popperjs/core';
 
-// Placeholder decorativo (opcional, si quieres mantener la garra de fondo transparente)
+// Placeholder decorativo
 const garraFondo = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiBmaWxsPSIjMDA3RThDIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0MCIgb3BhY2l0eT0iMC4yIi8+PC9zdmc+";
 
-// --- COMPONENTE INTERNO: DASHBOARD HOME ---
-const DashboardHome = ({ colors, styles }) => (
-  <div style={{ animation: "fadeIn 0.5s ease-out" }}>
-    <div style={{ marginBottom: "30px" }}>
-      <h1 style={{ color: colors.secondary, margin: "0 0 5px 0", fontSize: "1.8rem", fontWeight: "bold" }}>
-        Panel Principal
-      </h1>
-      <p style={{ color: "#888", margin: 0 }}>Bienvenido al sistema de administración.</p>
-    </div>
+// --- COMPONENTE INTERNO: DASHBOARD HOME (CONECTADO AL BACKEND) ---
+const DashboardHome = ({ colors, styles }) => {
+  // Estados para métricas reales
+  const [stats, setStats] = useState({ alumnos: 0, asignaturas: 0, notificaciones: 0 });
+  const [activities, setActivities] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-    <div style={{ display: "flex", gap: "20px", flexWrap: "wrap", marginBottom: "30px" }}>
-      {/* Card 1 */}
-      <div style={styles.statCard}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "15px" }}>
-          <div style={{ padding: "10px", borderRadius: "10px", backgroundColor: "#E0F7FA", color: colors.secondary }}>
-            <GraduationCap size={24} />
-          </div>
-          <span style={{ background: "#E8F5E9", color: "#2E7D32", padding: "2px 8px", borderRadius: "10px", fontSize: "0.75rem", fontWeight: "bold" }}>+12%</span>
-        </div>
-        <div style={{ color: "#888", fontSize: "0.85rem", fontWeight: "500" }}>Total Alumnos</div>
-        <div style={{ fontSize: "1.8rem", fontWeight: "bold", color: "#333" }}>21</div>
-        <div style={{ position: "absolute", top: "-40px", right: "-40px", width: "100px", height: "100px", borderRadius: "50%", background: colors.primary, opacity: 0.1 }} />
+  // Cargar datos al montar
+  useEffect(() => {
+    const fetchData = async () => {
+        try {
+            const res = await AdminService.getDashboardStats();
+            if(res.data && res.data.data) {
+                setStats(res.data.data.stats);
+                setActivities(res.data.data.activity);
+            }
+        } catch (error) {
+            console.error("Error cargando dashboard:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+    fetchData();
+  }, []);
+
+  // Helper para mostrar "Hace X tiempo"
+  const timeAgo = (dateStr) => {
+      const seconds = Math.floor((new Date() - new Date(dateStr)) / 1000);
+      let interval = seconds / 31536000;
+      if (interval > 1) return Math.floor(interval) + " años";
+      interval = seconds / 2592000;
+      if (interval > 1) return Math.floor(interval) + " meses";
+      interval = seconds / 86400;
+      if (interval > 1) return Math.floor(interval) + " días";
+      interval = seconds / 3600;
+      if (interval > 1) return Math.floor(interval) + " h";
+      interval = seconds / 60;
+      if (interval > 1) return Math.floor(interval) + " min";
+      return "Hace un momento";
+  };
+
+  return (
+    <div style={{ animation: "fadeIn 0.5s ease-out" }}>
+      <div style={{ marginBottom: "30px" }}>
+        <h1 style={{ color: colors.secondary, margin: "0 0 5px 0", fontSize: "1.8rem", fontWeight: "bold" }}>
+          Panel Principal
+        </h1>
+        <p style={{ color: "#888", margin: 0 }}>Bienvenido al sistema de administración.</p>
       </div>
 
-      {/* Card 2 */}
-      <div style={styles.statCard}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "15px" }}>
-          <div style={{ padding: "10px", borderRadius: "10px", backgroundColor: "#E0F2F1", color: "#00695C" }}>
-            <Presentation size={24} />
-          </div>
-        </div>
-        <div style={{ color: "#888", fontSize: "0.85rem", fontWeight: "500" }}>Maestros Activos</div>
-        <div style={{ fontSize: "1.8rem", fontWeight: "bold", color: "#333" }}>7</div>
-        <div style={{ position: "absolute", top: "-40px", right: "-40px", width: "100px", height: "100px", borderRadius: "50%", background: colors.primary, opacity: 0.1 }} />
-      </div>
-
-      {/* Card 3 */}
-      <div style={styles.statCard}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "15px" }}>
-          <div style={{ padding: "10px", borderRadius: "10px", backgroundColor: "#FFF3E0", color: "#EF6C00" }}>
-            <Bell size={24} />
-          </div>
-          <span style={{ background: "#FFEBEE", color: "#C62828", padding: "2px 8px", borderRadius: "10px", fontSize: "0.75rem", fontWeight: "bold" }}>!</span>
-        </div>
-        <div style={{ color: "#888", fontSize: "0.85rem", fontWeight: "500" }}>Notificaciones</div>
-        <div style={{ fontSize: "1.8rem", fontWeight: "bold", color: "#333" }}>48</div>
-        <div style={{ position: "absolute", top: "-40px", right: "-40px", width: "100px", height: "100px", borderRadius: "50%", background: "#ffababff", opacity: 0.1 }} />
-      </div>
-    </div>
-
-    <div style={{ backgroundColor: "#F9FAFB", borderRadius: "20px", padding: "25px", border: "1px solid #eee" }}>
-      <h3 style={{ margin: "0 0 15px 0", color: "#555", fontSize: "1.1rem" }}>Actividad Reciente</h3>
-      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-        {[1, 2, 3].map((_, i) => (
-          <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px", backgroundColor: "white", borderRadius: "10px", boxShadow: "0 2px 5px rgba(0,0,0,0.02)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: colors.primary }}></div>
-              <span style={{ fontSize: "0.9rem", color: "#555" }}>Nuevo alumno registrado: <strong>Juan Pérez</strong></span>
+      {/* TARJETAS DE MÉTRICAS */}
+      <div style={{ display: "flex", gap: "20px", flexWrap: "wrap", marginBottom: "30px" }}>
+        
+        {/* Card 1: Alumnos */}
+        <div style={styles.statCard}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "15px" }}>
+            <div style={{ padding: "10px", borderRadius: "10px", backgroundColor: "#E0F7FA", color: colors.secondary }}>
+              <GraduationCap size={24} />
             </div>
-            <span style={{ fontSize: "0.8rem", color: "#999" }}>Hace 2 min</span>
+            <span style={{ background: "#E8F5E9", color: "#2E7D32", padding: "2px 8px", borderRadius: "10px", fontSize: "0.75rem", fontWeight: "bold" }}>Activos</span>
           </div>
-        ))}
-      </div>
-    </div>
+          <div style={{ color: "#888", fontSize: "0.85rem", fontWeight: "500" }}>Total Alumnos</div>
+          <div style={{ fontSize: "1.8rem", fontWeight: "bold", color: "#333" }}>
+            {loading ? "..." : stats.alumnos}
+          </div>
+          <div style={{ position: "absolute", top: "-40px", right: "-40px", width: "100px", height: "100px", borderRadius: "50%", background: colors.primary, opacity: 0.1 }} />
+        </div>
 
-  </div>
-);
+        {/* Card 2: Asignaturas (Antes Maestros) */}
+        <div style={styles.statCard}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "15px" }}>
+            <div style={{ padding: "10px", borderRadius: "10px", backgroundColor: "#E0F2F1", color: "#00695C" }}>
+              <Presentation size={24} />
+            </div>
+          </div>
+          <div style={{ color: "#888", fontSize: "0.85rem", fontWeight: "500" }}>Total Asignaturas</div>
+          <div style={{ fontSize: "1.8rem", fontWeight: "bold", color: "#333" }}>
+            {loading ? "..." : stats.asignaturas}
+          </div>
+          <div style={{ position: "absolute", top: "-40px", right: "-40px", width: "100px", height: "100px", borderRadius: "50%", background: colors.primary, opacity: 0.1 }} />
+        </div>
+
+        {/* Card 3: Notificaciones (Histórico) */}
+        <div style={styles.statCard}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "15px" }}>
+            <div style={{ padding: "10px", borderRadius: "10px", backgroundColor: "#FFF3E0", color: "#EF6C00" }}>
+              <Bell size={24} />
+            </div>
+            <span style={{ background: "#FFEBEE", color: "#C62828", padding: "2px 8px", borderRadius: "10px", fontSize: "0.75rem", fontWeight: "bold" }}>Total</span>
+          </div>
+          <div style={{ color: "#888", fontSize: "0.85rem", fontWeight: "500" }}>Actividad Registrada</div>
+          <div style={{ fontSize: "1.8rem", fontWeight: "bold", color: "#333" }}>
+            {loading ? "..." : stats.notificaciones}
+          </div>
+          <div style={{ position: "absolute", top: "-40px", right: "-40px", width: "100px", height: "100px", borderRadius: "50%", background: "#ffababff", opacity: 0.1 }} />
+        </div>
+      </div>
+
+      {/* LISTA DE ACTIVIDAD RECIENTE */}
+      <div style={{ backgroundColor: "#F9FAFB", borderRadius: "20px", padding: "25px", border: "1px solid #eee" }}>
+        <h3 style={{ margin: "0 0 15px 0", color: "#555", fontSize: "1.1rem" }}>Actividad Reciente</h3>
+        
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          {activities.length === 0 ? (
+             <p style={{color: "#999", fontStyle: "italic", fontSize: "0.9rem"}}>No hay actividad registrada aún.</p>
+          ) : (
+             activities.map((act) => (
+                <div key={act._id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px", backgroundColor: "white", borderRadius: "10px", boxShadow: "0 2px 5px rgba(0,0,0,0.02)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    {/* Indicador de color según tipo */}
+                    <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: act.type === 'REGISTRO' ? colors.primary : "#EF6C00" }}></div>
+                    
+                    <span style={{ fontSize: "0.9rem", color: "#555" }}>
+                        {act.message}
+                    </span>
+                  </div>
+                  <span style={{ fontSize: "0.8rem", color: "#999" }}>{timeAgo(act.createdAt)}</span>
+                </div>
+             ))
+          )}
+        </div>
+      </div>
+
+    </div>
+  );
+};
 
 // --- COMPONENTE PRINCIPAL (Layout Base) ---
 export default function AdminDashboard() {
@@ -109,8 +169,8 @@ export default function AdminDashboard() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
+    localStorage.removeItem("authToken"); // Asegúrate de borrar la key correcta
+    localStorage.removeItem("user");      // Si guardas user
     navigate("/");
   };
 
@@ -119,7 +179,6 @@ export default function AdminDashboard() {
     { id: "horarios", name: "Horarios", icon: <Calendar size={20} /> },
     { id: "clases", name: "Clases", icon: <GraduationCap size={20} /> },
     { id: "asignaturas", name: "Asignaturas", icon: <Presentation size={20} /> },
-
   ];
 
   // ESTILOS
@@ -134,7 +193,6 @@ export default function AdminDashboard() {
       position: "relative", boxShadow: "4px 0 15px rgba(0,0,0,0.1)", zIndex: 50, flexShrink: 0
     },
     sidebarHeader: {
-      // Ajuste para permitir logo + texto verticalmente
       minHeight: "120px", padding: "20px 0",
       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
       borderBottom: "1px solid rgba(255,255,255,0.1)"
@@ -176,8 +234,6 @@ export default function AdminDashboard() {
       case 'horarios': return <Horarios colors={colors} />;
       case 'clases': return <Clases colors={colors} />;
       case 'asignaturas': return <Asignaturas colors={colors} />;
-      case 'jefes': return <JefesGrupo colors={colors} />;
-
       default: return <DashboardHome colors={colors} styles={styles} />;
     }
   };
@@ -187,7 +243,6 @@ export default function AdminDashboard() {
       {/* SIDEBAR */}
       <aside style={styles.sidebar}>
         <div style={styles.sidebarHeader}>
-          {/* LOGO PRINCIPAL: Se ajusta el tamaño si la barra está cerrada */}
           <img
             src={imgLogo}
             alt="Logo"
@@ -198,13 +253,11 @@ export default function AdminDashboard() {
               transition: "all 0.3s"
             }}
           />
-
           {sidebarOpen ? (
             <div style={{ color: "white", fontSize: "1.5rem", fontWeight: "bold", letterSpacing: "1px" }}>NEXTCLASS</div>
           ) : (
             <div style={{ color: "white", fontSize: "1.2rem", fontWeight: "bold" }}>NC</div>
           )}
-
         </div>
 
         <nav style={{ marginTop: "2rem", padding: "0 10px", display: "flex", flexDirection: "column" }}>
@@ -249,14 +302,12 @@ export default function AdminDashboard() {
             <Menu size={24} />
           </button>
           <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
-
             <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
               <img src={imgGarra} alt="Notificaciones" style={{ width: "28px", height: "auto", opacity: 0.8 }} />
             </div>
-
             <div style={{ display: "flex", alignItems: "center", gap: "15px", borderLeft: "1px solid #ddd", paddingLeft: "20px" }}>
               <div style={{ textAlign: "right", display: window.innerWidth < 768 ? "none" : "block" }}>
-                <p style={{ margin: 0, fontSize: "0.9rem", fontWeight: "bold", color: "#444" }}>Admin Usuario</p>
+                <p style={{ margin: 0, fontSize: "0.9rem", fontWeight: "bold", color: "#444" }}>Admin</p>
                 <p style={{ margin: 0, fontSize: "0.75rem", color: "#888" }}>Administrador</p>
               </div>
               <div style={{ width: "40px", height: "40px", borderRadius: "50%", backgroundColor: colors.secondary, color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold", boxShadow: "0 2px 5px rgba(0,0,0,0.1)" }}>A</div>

@@ -16,7 +16,7 @@ const timeSlots = [
   "15:30 - 16:30", "16:30 - 17:30", "17:30 - 18:30", "18:30 - 19:30" 
 ];
 const daysOfWeek = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
-const mockSalones = ["101", "102", "Lab 1", "Lab 2", "Auditorio", "Virtual"];
+const mockSalones = ["121", "122", "123", "124", "Laboratorio 1", "Laboratorio 2", "Laboratorio 3", "Laboratorio de Idiomas"];
 
 const Horarios = ({ colors = { primary: "#00B8C8", secondary: "#007E8C" } }) => {
   const [viewMode, setViewMode] = useState('list'); 

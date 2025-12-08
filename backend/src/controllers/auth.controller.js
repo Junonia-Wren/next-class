@@ -1,5 +1,6 @@
 import userDaos from "../daos/user.daos.js";
 import Group from "../models/group.model.js"; 
+import Activity from "../models/activity.model.js"; // <--- 1. IMPORTAR MODELO ACTIVIDAD
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 
@@ -20,7 +21,7 @@ authControllers.register = async (req, res) => {
             role: "student"
         };
 
-        // 1. CREAR USUARIO (Variable: newUser)
+        // 1. CREAR USUARIO
         const newUser = await userDaos.create(userData);
 
         // 2. ASIGNACIÓN AUTOMÁTICA DE GRUPO
@@ -33,20 +34,26 @@ authControllers.register = async (req, res) => {
             });
 
             if (groupFound) {
-                // SI EXISTE: Usamos newUser._id
+                // A) EL GRUPO EXISTE: Agregamos al alumno
                 groupFound.students.push(newUser._id);
                 await groupFound.save();
-                console.log(`Alumno agregado al grupo existente: ${grupo}`);
             } else {
-                // NO EXISTE: Usamos newUser._id
+                // B) EL GRUPO NO EXISTE: Lo creamos
                 await Group.create({
                     level: nivel,
                     area: area,
                     name: grupo,
-                    students: [newUser._id] // <--- AQUÍ ESTABA EL ERROR
+                    students: [newUser._id]
                 });
                 console.log(`Grupo nuevo ${grupo} creado automáticamente.`);
             }
+
+            // 3. REGISTRAR ACTIVIDAD (NUEVO)
+            // Formato: "Se ha registrado [Nombre] en [Área] [Grupo]"
+            await Activity.create({
+                type: 'REGISTRO',
+                message: `Se ha registrado ${name} en ${area} ${grupo}`
+            });
         }
 
         return res.status(201).json({

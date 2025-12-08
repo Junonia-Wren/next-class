@@ -1,23 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Plus, Edit, Trash2, ArrowLeft, Save, Presentation, 
-  FileText, Image as ImageIcon, Percent, Calendar, BookOpen 
+  FileText, Image as ImageIcon, Percent, Calendar, BookOpen, Upload, Search 
 } from 'lucide-react';
 import FeedbackModal from './FeedBackModal'; 
 import SubjectService from '../services/subjectService'; 
 
-// Placeholder para foto
+// Placeholder por defecto
 const defaultTeacher = "https://cdn-icons-png.flaticon.com/512/6833/6833591.png";
 
 const Asignaturas = ({ colors = { primary: "#00B8C8", secondary: "#007E8C" } }) => {
-  const [viewMode, setViewMode] = useState('list'); 
+  const [viewMode, setViewMode] = useState('list'); // 'list', 'preview', 'form'
   
+  // Referencia para el input de archivo oculto
+  const fileInputRef = useRef(null);
+
   // Estado inicial
   const initialFormState = {
       id: null,
       nombre: "",
       teacherName: "",
-      profesorFoto: defaultTeacher,
+      profesorFoto: defaultTeacher, 
       porcentajes: {
           ser: { valor: "", descripcion: "" },
           saber: { valor: "", descripcion: "" },
@@ -34,6 +37,8 @@ const Asignaturas = ({ colors = { primary: "#00B8C8", secondary: "#007E8C" } }) 
 
   const [formData, setFormData] = useState(initialFormState);
   const [asignaturasList, setAsignaturasList] = useState([]);
+  const [searchTerm, setSearchTerm] = useState(""); // Estado para el buscador
+
   const [modalConfig, setModalConfig] = useState({
     isOpen: false, type: 'success', title: '', message: '', onConfirm: () => {}, onCancel: () => {}
   });
@@ -46,12 +51,26 @@ const Asignaturas = ({ colors = { primary: "#00B8C8", secondary: "#007E8C" } }) 
   const loadData = async () => {
     try {
         const res = await SubjectService.getAll();
-        // Soportamos si viene en res.data o res.data.data
         const data = res.data?.data || res.data || [];
         setAsignaturasList(data);
     } catch (error) {
-        console.error("Error cargando asignaturas:", error);
+        console.error("Error al cargar:", error);
     }
+  };
+
+  // --- LÓGICA DE IMAGEN (BASE64) ---
+  const handleImageUpload = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+          if (file.size > 2 * 1024 * 1024) {
+              return alert("La imagen es muy pesada. Máximo 2MB.");
+          }
+          const reader = new FileReader();
+          reader.onloadend = () => {
+              setFormData(prev => ({ ...prev, profesorFoto: reader.result }));
+          };
+          reader.readAsDataURL(file);
+      }
   };
 
   // --- HELPERS ---
@@ -76,64 +95,57 @@ const Asignaturas = ({ colors = { primary: "#00B8C8", secondary: "#007E8C" } }) 
     setFormData(prev => ({ ...prev, unidades: newUnits }));
   };
 
-  // --- ACCIONES ---
-  const handleCreate = () => {
-    setFormData(initialFormState);
-    setViewMode('form');
-  };
+  // Filtrado de búsqueda
+  const filteredList = asignaturasList.filter(item => 
+      item.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.teacherName.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-  const handleViewDetails = (item) => {
-      setFormData(item);
-      setViewMode('preview');
-  };
-
+  // --- NAVEGACIÓN Y VISTAS ---
+  const handleCreate = () => { setFormData(initialFormState); setViewMode('form'); };
+  const handleViewDetails = (item) => { setFormData(item); setViewMode('preview'); };
+  const handleEdit = (item) => { setFormData(item); setViewMode('form'); };
   const handleEditFromPreview = () => setViewMode('form');
 
+  // --- CRUD ---
   const handleSave = async () => {
     if (!formData.nombre.trim()) return alert("Nombre obligatorio");
-    if (!formData.teacherName.trim()) return alert("Profesor obligatorio");
+    if (!formData.teacherName.trim()) return alert("Docente obligatorio");
 
     try {
         if (formData.id) {
             await SubjectService.update(formData.id, formData);
-            setModalConfig({
-                isOpen: true, type: 'success', title: '¡Actualizado!',
-                message: `Asignatura actualizada.`,
-                onConfirm: () => { closeModal(); loadData(); setViewMode('list'); }
-            });
         } else {
-            const { id, ...dataToSend } = formData;
-            await SubjectService.create(dataToSend);
-            setModalConfig({
-                isOpen: true, type: 'success', title: '¡Creado!',
-                message: `Asignatura creada.`,
-                onConfirm: () => { closeModal(); loadData(); setViewMode('list'); }
-            });
+            const { id, ...data } = formData;
+            await SubjectService.create(data);
         }
+        setModalConfig({ 
+            isOpen: true, type: 'success', title: '¡Guardado!', 
+            message: 'Operación exitosa.', 
+            onConfirm: () => { closeModal(); loadData(); setViewMode('list'); } 
+        });
     } catch (error) {
         console.error(error);
         alert("Error al guardar.");
     }
   };
 
-  const handleDeleteRequest = (item, e) => {
-    if(e) e.stopPropagation();
-    setModalConfig({
-      isOpen: true, type: 'danger', title: '¿Eliminar?',
-      message: `Se eliminará "${item.nombre}".`,
-      onCancel: closeModal,
-      onConfirm: async () => {
-        await SubjectService.delete(item.id);
-        setModalConfig({
-            isOpen: true, type: 'deleteSuccess', title: '¡Eliminado!',
-            message: 'Eliminado correctamente.', 
-            onConfirm: () => { closeModal(); loadData(); setViewMode('list'); }
-        });
-      }
-    });
+  const handleDelete = (item) => {
+      setModalConfig({
+          isOpen: true, type: 'danger', title: '¿Eliminar?', message: `Se borrará ${item.nombre}`,
+          onCancel: () => closeModal(),
+          onConfirm: async () => {
+              try {
+                  await SubjectService.delete(item.id || formData.id);
+                  closeModal();
+                  loadData();
+                  setViewMode('list'); 
+              } catch (e) { alert("Error al borrar"); }
+          }
+      });
   };
 
-  // ESTILOS
+  // ESTILOS (Idénticos a Clases.jsx)
   const labelStyle = { display: "block", marginBottom: "8px", fontWeight: "600", color: "#555", fontSize: "0.9rem" };
   const inputStyle = { width: "100%", padding: "12px 15px", borderRadius: "10px", border: "1px solid #ddd", backgroundColor: "#F9FAFB", color: "#333", fontSize: "0.95rem", outline: "none" };
   const cardStyle = { backgroundColor: "white", padding: "30px", borderRadius: "20px", boxShadow: "0 5px 20px rgba(0,0,0,0.03)", marginBottom: "25px" };
@@ -142,44 +154,72 @@ const Asignaturas = ({ colors = { primary: "#00B8C8", secondary: "#007E8C" } }) 
 
   return (
     <>
-      {/* --- VISTA LISTA --- */}
+      {/* ================= VISTA LISTA (DISEÑO UNIFICADO) ================= */}
       {viewMode === 'list' && (
-        <div style={{ animation: "fadeIn 0.3s ease-out" }}>
-            <div style={{ marginBottom: "30px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{animation: "fadeIn 0.3s"}}>
+            
+            {/* 1. HEADER */}
+            <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"30px"}}>
                 <div>
-                    <h1 style={{ color: colors.secondary, margin: "0 0 5px 0", fontSize: "1.8rem", fontWeight: "bold" }}>Asignaturas</h1>
-                    <p style={{ color: "#888", margin: 0 }}>Gestión de asignaturas.</p>
+                    <h1 style={{color: colors.secondary, margin: "0 0 5px 0", fontSize: "1.8rem", fontWeight: "bold"}}>Catálogo de Asignaturas</h1>
+                    <p style={{color: "#888", margin: 0}}>Gestión de materias y planes de evaluación.</p>
                 </div>
-                <button onClick={handleCreate} style={{ backgroundColor: colors.primary, color: "white", padding: "10px 25px", borderRadius: "50px", border: "none", fontWeight: "bold", cursor: "pointer", display: "flex", gap: "8px", alignItems: "center" }}>
-                    <Plus size={20} /> Nueva Asignatura
+                <button onClick={handleCreate} style={{background: colors.primary, color:"white", border:"none", padding:"10px 25px", borderRadius:"50px", cursor:"pointer", display:"flex", alignItems:"center", gap:"8px", fontWeight:"bold", boxShadow: "0 4px 15px rgba(0,184,200,0.3)"}}>
+                    <Plus size={20}/> Nueva Asignatura
                 </button>
             </div>
-            <div style={{ backgroundColor: "white", borderRadius: "20px", boxShadow: "0 5px 20px rgba(0,0,0,0.03)", overflow: "hidden" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+
+            {/* 2. BUSCADOR (Igual que Clases.jsx) */}
+            <div style={{ marginBottom: "25px", position: "relative", maxWidth: "500px" }}>
+                <Search size={20} style={{ position: "absolute", left: "20px", top: "50%", transform: "translateY(-50%)", color: "#aaa" }} />
+                <input 
+                    type="text" 
+                    placeholder="Buscar asignatura..." 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    style={{ width: "100%", padding: "15px 15px 15px 50px", borderRadius: "50px", border: "1px solid #eee", backgroundColor: "white", outline: "none", fontSize: "0.95rem", boxShadow: "0 2px 10px rgba(0,0,0,0.02)" }} 
+                />
+            </div>
+
+            {/* 3. TABLA */}
+            <div style={{background:"white", borderRadius:"20px", overflow:"hidden", boxShadow:"0 5px 20px rgba(0,0,0,0.03)"}}>
+                <table style={{width:"100%", borderCollapse:"collapse"}}>
                     <thead>
-                        <tr style={{ backgroundColor: "#F8F9FA", color: "#666", textAlign: "left" }}>
-                            <th style={{ padding: "20px 25px" }}>Asignatura</th>
-                            <th style={{ padding: "20px 25px", textAlign: "right" }}>Acciones</th>
+                        <tr style={{background:"#F8F9FA", color: "#666", textAlign:"left", fontSize: "0.9rem", textTransform: "uppercase", letterSpacing: "0.5px"}}>
+                            <th style={{padding:"20px 25px", fontWeight: "600"}}>Asignatura / Docente</th>
+                            <th style={{padding:"20px 25px", fontWeight: "600", textAlign:"right"}}>Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {asignaturasList.length === 0 ? (
-                            <tr><td colSpan="2" style={{ padding: "30px", textAlign: "center", color: "#999" }}>Sin datos.</td></tr>
+                        {filteredList.length === 0 ? (
+                            <tr><td colSpan="2" style={{padding:"40px", textAlign:"center", color:"#999"}}>No se encontraron asignaturas.</td></tr>
                         ) : (
-                            asignaturasList.map((item) => (
-                                <tr key={item.id} onClick={() => handleViewDetails(item)} style={{ borderBottom: "1px solid #f0f0f0", cursor: "pointer" }}>
-                                    <td style={{ padding: "20px 25px" }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                            <div style={{ padding: '10px', backgroundColor: '#E0F2F1', borderRadius: '10px', color: colors.primary }}><Presentation size={20}/></div>
+                            filteredList.map(item => (
+                                <tr 
+                                    key={item.id} 
+                                    onClick={() => handleViewDetails(item)} 
+                                    style={{borderBottom:"1px solid #f0f0f0", cursor: "pointer", transition: "background 0.2s"}} 
+                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#FAFAFA"} 
+                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "white"}
+                                >
+                                    <td style={{padding:"20px 25px"}}>
+                                        <div style={{display:"flex", alignItems:"center", gap:"15px"}}>
+                                            <div style={{padding: '10px', backgroundColor: '#E0F2F1', borderRadius: '10px', color: colors.primary}}>
+                                                <Presentation size={20}/>
+                                            </div>
                                             <div>
-                                                <div style={{ fontWeight: 'bold' }}>{item.nombre}</div>
-                                                <div style={{ fontSize: '0.8rem', color: '#888' }}>{item.teacherName}</div>
+                                                <div style={{fontWeight:"bold", fontSize: "1.05rem", color: "#333"}}>{item.nombre}</div>
+                                                <div style={{fontSize:"0.9rem", color:"#777"}}>{item.teacherName}</div>
                                             </div>
                                         </div>
                                     </td>
-                                    <td style={{ padding: "20px 25px", textAlign: "right" }}>
-                                        <button onClick={(e) => { e.stopPropagation(); handleViewDetails(item); handleEditFromPreview(); }} style={{ marginRight: "10px", border: "none", background: "#E0F7FA", padding: "8px", borderRadius: "8px", color: colors.secondary, cursor: "pointer" }}><Edit size={18}/></button>
-                                        <button onClick={(e) => handleDeleteRequest(item, e)} style={{ border: "none", background: "#FFEBEE", padding: "8px", borderRadius: "8px", color: "#D32F2F", cursor: "pointer" }}><Trash2 size={18}/></button>
+                                    <td style={{padding:"20px 25px", textAlign:"right"}}>
+                                        <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} style={{marginRight:"10px", border:"none", background:"#E0F7FA", padding:"8px", borderRadius:"8px", cursor:"pointer", color: colors.secondary}} title="Editar">
+                                            <Edit size={18}/>
+                                        </button>
+                                        <button onClick={(e) => { e.stopPropagation(); handleDelete(item); }} style={{border:"none", background:"#FFEBEE", padding:"8px", borderRadius:"8px", cursor:"pointer", color: "#D32F2F"}} title="Eliminar">
+                                            <Trash2 size={18}/>
+                                        </button>
                                     </td>
                                 </tr>
                             ))
@@ -190,7 +230,7 @@ const Asignaturas = ({ colors = { primary: "#00B8C8", secondary: "#007E8C" } }) 
         </div>
       )}
 
-      {/* --- VISTA PREVIEW --- */}
+      {/* ================= VISTA PREVIEW ================= */}
       {viewMode === 'preview' && (
         <div style={{ animation: "fadeIn 0.3s ease-out" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "25px" }}>
@@ -200,7 +240,7 @@ const Asignaturas = ({ colors = { primary: "#00B8C8", secondary: "#007E8C" } }) 
                 </div>
                 <div style={{ display: "flex", gap: "10px" }}>
                     <button onClick={handleEditFromPreview} style={{ background: colors.secondary, border: "none", color: "white", padding: "10px", borderRadius: "50%", cursor: "pointer" }}><Edit size={20}/></button>
-                    <button onClick={(e) => handleDeleteRequest(formData, e)} style={{ background: "#D32F2F", border: "none", color: "white", padding: "10px", borderRadius: "50%", cursor: "pointer" }}><Trash2 size={20}/></button>
+                    <button onClick={() => handleDelete(formData)} style={{ background: "#D32F2F", border: "none", color: "white", padding: "10px", borderRadius: "50%", cursor: "pointer" }}><Trash2 size={20}/></button>
                 </div>
             </div>
 
@@ -215,7 +255,6 @@ const Asignaturas = ({ colors = { primary: "#00B8C8", secondary: "#007E8C" } }) 
                 <div style={{ textAlign: "left" }}>
                     <h3 style={sectionTitleStyle}>Evaluación</h3>
                     {Object.entries(formData.porcentajes || {}).map(([key, data]) => (
-                        // Corregido: Mostrar si tiene valor O descripción
                         (data.valor || data.descripcion) ? (
                             <div key={key} style={{ display: "flex", marginBottom: "15px", alignItems: "flex-start" }}>
                                 <div style={{ flex: "0 0 120px", fontWeight: "bold", color: "#555", textTransform: "capitalize" }}>{key}: {data.valor}%</div>
@@ -228,7 +267,6 @@ const Asignaturas = ({ colors = { primary: "#00B8C8", secondary: "#007E8C" } }) 
                 <div style={{ textAlign: "left", marginTop: "30px" }}>
                     <h3 style={sectionTitleStyle}>Unidades</h3>
                     {formData.unidades?.map((unit, index) => (
-                        // Corregido: Mostrar si tiene fecha O porcentaje (aunque sea 0)
                         (unit.fechas || unit.porcentaje !== "") ? (
                             <div key={index} style={{ display: "flex", marginBottom: "10px", fontSize: "0.95rem" }}>
                                 <div style={{ flex: "0 0 120px", fontWeight: "600", color: "#555" }}>Unidad {index + 1} - {unit.porcentaje}%</div>
@@ -238,7 +276,6 @@ const Asignaturas = ({ colors = { primary: "#00B8C8", secondary: "#007E8C" } }) 
                     ))}
                 </div>
 
-                {/* Corregido: Mostrar notas si existen */}
                 {formData.notas ? (
                     <div style={{ textAlign: "left", marginTop: "30px", backgroundColor: "#F9FAFB", padding: "20px", borderRadius: "15px" }}>
                         <h3 style={{ ...sectionTitleStyle, marginTop: 0 }}>Notas</h3>
@@ -249,23 +286,43 @@ const Asignaturas = ({ colors = { primary: "#00B8C8", secondary: "#007E8C" } }) 
         </div>
       )}
 
-      {/* --- VISTA FORMULARIO --- */}
+      {/* ================= VISTA FORMULARIO ================= */}
       {viewMode === 'form' && (
-        <div style={{ animation: "fadeIn 0.3s ease-out", paddingBottom: "50px" }}>
-            <div style={{ display: "flex", alignItems: "center", marginBottom: "25px", gap: "15px" }}>
-                <button onClick={() => setViewMode('list')} style={{ background: "white", border: "1px solid #eee", borderRadius: "50%", width: "40px", height: "40px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><ArrowLeft size={20}/></button>
-                <h2 style={{ margin: 0, color: colors.secondary, fontSize: "1.6rem", fontWeight: "bold" }}>{formData.id ? "Editar" : "Nueva"}</h2>
+        <div style={{animation: "fadeIn 0.3s"}}>
+            <div style={{display:"flex", alignItems:"center", marginBottom:"20px", gap:"10px"}}>
+                <button onClick={() => setViewMode('list')} style={{border:"1px solid #ddd", background:"white", borderRadius:"50%", width:"35px", height:"35px", cursor:"pointer"}}><ArrowLeft size={18}/></button>
+                <h2 style={{margin:0, color: colors.secondary}}>{formData.id ? "Editar" : "Nueva"} Asignatura</h2>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "25px" }}>
-                <div style={cardStyle}>
+            <div style={{display: "grid", gridTemplateColumns: "1fr", gap: "25px"}}>
+                <div style={{background:"white", padding:"30px", borderRadius:"20px", boxShadow:"0 4px 15px rgba(0,0,0,0.05)"}}>
                     <h3 style={{ color: colors.primary, marginBottom: "20px", display: "flex", alignItems: "center", gap: "10px" }}><Presentation size={20}/> Datos Generales</h3>
-                    <div style={{ marginBottom: "25px" }}><label style={labelStyle}>Materia</label><input type="text" value={formData.nombre} onChange={(e) => setFormData({...formData, nombre: e.target.value})} style={inputStyle} placeholder="Ej: Matemáticas" /></div>
-                    <div style={{ marginBottom: "25px" }}><label style={labelStyle}>Docente</label><input type="text" value={formData.teacherName} onChange={(e) => setFormData({...formData, teacherName: e.target.value})} style={inputStyle} placeholder="Ej: Ing. Juan" /></div>
+                    <div style={{marginBottom:"20px"}}>
+                        <label style={labelStyle}>Materia</label>
+                        <input type="text" value={formData.nombre} onChange={e => setFormData({...formData, nombre: e.target.value})} style={inputStyle} />
+                    </div>
+                    <div style={{marginBottom:"20px"}}>
+                        <label style={labelStyle}>Docente</label>
+                        <input type="text" value={formData.teacherName} onChange={e => setFormData({...formData, teacherName: e.target.value})} style={inputStyle} />
+                    </div>
+                    <div style={{marginBottom:"10px"}}>
+                        <label style={labelStyle}>Foto de Perfil</label>
+                        <div style={{ display: "flex", gap: "20px", alignItems: "center", marginTop: "10px" }}>
+                            <div style={{ textAlign: "center" }}>
+                                <input type="file" ref={fileInputRef} style={{ display: "none" }} accept="image/*" onChange={handleImageUpload} />
+                                <button onClick={() => fileInputRef.current.click()} style={{ width: "70px", height: "70px", borderRadius: "20px", backgroundColor: colors.primary, border: "none", color: "white", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 4px 10px rgba(0,184,200,0.3)" }}>
+                                    <Upload size={28} />
+                                </button>
+                                <span style={{ fontSize: "0.8rem", color: "#666", fontWeight: "500" }}>Subir</span>
+                            </div>
+                            <div>
+                                <img src={formData.profesorFoto || defaultTeacher} alt="Preview" style={{ width: "70px", height: "70px", borderRadius: "50%", objectFit: "cover", border: "2px solid #ddd" }} />
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div style={cardStyle}>
                     <h3 style={{ color: colors.primary, marginBottom: "20px", display: "flex", alignItems: "center", gap: "10px" }}><Percent size={20}/> Evaluación</h3>
-                    <div style={{ display: "grid", gridTemplateColumns: "100px 1fr", gap: "15px", marginBottom: "10px" }}><label style={labelStyle}>%</label><label style={labelStyle}>Descripción</label></div>
                     {['ser', 'saber', 'saberHacer'].map((item) => (
                         <div key={item} style={{ display: "grid", gridTemplateColumns: "100px 1fr", gap: "15px", marginBottom: "15px" }}>
                             <div><label style={{textTransform:"capitalize", fontSize:"0.8rem", marginBottom:"5px"}}>{item}</label><input type="number" value={formData.porcentajes[item].valor} onChange={(e) => updateNestedState('porcentajes', item, 'valor', e.target.value)} style={inputStyle} /></div>
@@ -286,13 +343,14 @@ const Asignaturas = ({ colors = { primary: "#00B8C8", secondary: "#007E8C" } }) 
                     <div style={{ marginTop: "30px" }}><label style={labelStyle}>Notas</label><textarea value={formData.notas} onChange={(e) => setFormData({...formData, notas: e.target.value})} style={{ ...inputStyle, height: "100px" }} /></div>
                 </div>
             </div>
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "15px", marginTop: "30px" }}>
-                <button onClick={() => setViewMode('list')} style={{ backgroundColor: "transparent", color: "#666", padding: "12px 30px", borderRadius: "30px", border: "1px solid #ddd", fontWeight: "600", cursor: "pointer" }}>Cancelar</button>
-                <button onClick={handleSave} style={{ backgroundColor: colors.secondary, color: "white", padding: "12px 40px", borderRadius: "30px", border: "none", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}><Save size={18} /> Guardar</button>
+
+            <div style={{marginTop:"30px", textAlign:"right"}}>
+                <button onClick={handleSave} style={{background: colors.secondary, color:"white", border:"none", padding:"12px 30px", borderRadius:"30px", fontWeight:"bold", cursor:"pointer", display:"inline-flex", gap:"10px", alignItems:"center"}}>
+                    <Save size={18}/> Guardar
+                </button>
             </div>
         </div>
       )}
-
       <FeedbackModal isOpen={modalConfig.isOpen} {...modalConfig} />
     </>
   );
