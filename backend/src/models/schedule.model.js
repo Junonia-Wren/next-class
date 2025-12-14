@@ -1,23 +1,32 @@
 import { model, Schema } from "mongoose";
 
-const scheduleSchema = new Schema({
+// Sub-esquema para cada celda (Hora)
+const slotSchema = new Schema({
+    time: { type: String, required: true }, // "7:00 - 8:00"
+    subject: { type: Schema.Types.ObjectId, ref: "Subject", default: null },
+    classroom: { type: String, default: "" }
+}, { _id: false });
 
-    schedule_id:{
-    type: String,
-    required: true,
-    unique: true
-},
-    subject: String,//Materia
-    teacher: String,
-    classroom: String,//salon
-    day: String,
-    startTime: String,
-    endTime: String,
-    roomImage: String
-},
-{
-    versionKey:false,
-    timestamps:true
-});
+const scheduleSchema = new Schema(
+  {
+    // Un horario pertenece a un grupo específico
+    group: { 
+        type: Schema.Types.ObjectId, 
+        ref: "Group", 
+        required: true,
+        unique: true 
+    },
+    
+    // La matriz de la semana
+    schedule: {
+        Lunes: [slotSchema],
+        Martes: [slotSchema],
+        Miércoles: [slotSchema],
+        Jueves: [slotSchema],
+        Viernes: [slotSchema]
+    }
+  },
+  { timestamps: true }
+);
 
-export default model("schedule", scheduleSchema);
+export default model("Schedule", scheduleSchema);
