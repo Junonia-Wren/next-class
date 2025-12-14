@@ -7,6 +7,7 @@ import garra from "../assets/garra.png";
 import { LogOut } from "lucide-react"; 
 import { useNavigate } from "react-router-dom"; 
 import Logo from '../assets/Logo.png'
+import { disconnectSocket, connectSocket} from "../services/socket";
 
 export default function DashboardAlumnos() {
     const navigate = useNavigate();
@@ -59,6 +60,7 @@ export default function DashboardAlumnos() {
 
     const handleLogout = () => {
         if(window.confirm("¿Cerrar sesión?")) {
+            disconnectSocket();
             localStorage.removeItem("authToken");
             navigate("/"); 
         }
@@ -144,6 +146,33 @@ export default function DashboardAlumnos() {
         const interval = setInterval(tick, 60000); 
         return () => clearInterval(interval);
     }, [scheduleData, diaSeleccionado]);
+
+    useEffect(() => {
+        const socket = connectSocket();
+        if (!socket) return;
+
+        socket.on("schedule:updated", async (data) => {
+            console.log("📅 Horario actualizado:", data);
+
+            sendNotification(
+            "Horario actualizado",
+            "Tu horario ha sido actualizado por el administrador"
+            );
+
+            // 🔄 RECARGAR HORARIO
+            const token = localStorage.getItem("authToken");
+            const decoded = parseJwt(token);
+
+            const res = await ScheduleService.getHorarioAlumno(decoded.matricula);
+            if (res.data?.data?.schedule) {
+            setScheduleData(res.data.data.schedule);
+            }
+        });
+
+        return () => {
+            disconnectSocket();
+        };
+    }, []);
 
     let claseAVisualizar = null;
     let tituloTarjeta = "Actual";

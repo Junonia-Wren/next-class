@@ -1,6 +1,7 @@
 import Schedule from "../models/schedule.model.js";
 import Group from "../models/group.model.js";
 import User from "../models/user.model.js";
+import { io } from "../index.js";
 
 const scheduleControllers = {};
 
@@ -105,40 +106,55 @@ scheduleControllers.getHorarioAlumno = async (req, res) => {
 
 // Insertar Nuevo Horario
 scheduleControllers.insertOne = async (req, res) => {
-    try {
-        const { group, schedule } = req.body; // Recibe ID del grupo y la matriz
+  try {
+    const { group, schedule } = req.body;
 
-        // Verificar si ya existe para no duplicar
-        const existing = await Schedule.findOne({ group });
-        if (existing) return res.status(400).json({ message: "Este grupo ya tiene un horario. Usa actualizar." });
+    const existing = await Schedule.findOne({ group });
+    if (existing)
+      return res.status(400).json({ message: "Este grupo ya tiene un horario." });
 
-        const newSchedule = new Schedule({ group, schedule });
-        await newSchedule.save();
+    const newSchedule = await Schedule.create({ group, schedule });
 
-        res.status(201).json({ message: "Horario creado exitosamente", data: newSchedule });
-    } catch (error) {
-        res.status(400).json({ message: "Error al crear horario", error: error.message });
-    }
+    // 🔥 OBTENER NOMBRE DEL GRUPO
+    const groupData = await Group.findById(group);
+
+    // 🔔 EMITIR SOLO A ESE GRUPO
+    io.to(`group:${groupData.name}`).emit("schedule:updated", {
+      group: groupData.name,
+      action: "created",
+    });
+
+    res.status(201).json({ message: "Horario creado", data: newSchedule });
+  } catch (error) {
+    res.status(400).json({ message: "Error", error: error.message });
+  }
 };
 
 // Actualizar Horario
 scheduleControllers.updateOne = async (req, res) => {
-    try {
-        const { schedule_id } = req.params;
-        const { schedule } = req.body; // Solo actualizamos la matriz de días
+  try {
+    const { schedule_id } = req.params;
+    const { schedule } = req.body;
 
-        const updated = await Schedule.findByIdAndUpdate(
-            schedule_id, 
-            { schedule }, 
-            { new: true }
-        );
+    const updated = await Schedule.findByIdAndUpdate(
+      schedule_id,
+      { schedule },
+      { new: true }
+    ).populate("group");
 
-        if (!updated) return res.status(404).json({ message: "Horario no encontrado" });
+    if (!updated)
+      return res.status(404).json({ message: "Horario no encontrado" });
 
-        res.json({ message: "Horario actualizado", data: updated });
-    } catch (error) {
-        res.status(400).json({ message: "Error al actualizar", error: error.message });
-    }
+    // 🔔 AVISO A SU GRUPO
+    io.to(`group:${updated.group.name}`).emit("schedule:updated", {
+      group: updated.group.name,
+      action: "updated",
+    });
+
+    res.json({ message: "Horario actualizado", data: updated });
+  } catch (error) {
+    res.status(400).json({ message: "Error", error: error.message });
+  }
 };
 
 // Eliminar Horario
