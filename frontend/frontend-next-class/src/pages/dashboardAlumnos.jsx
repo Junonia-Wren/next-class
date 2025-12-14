@@ -7,7 +7,10 @@ import garra from "../assets/garra.png";
 import { LogOut } from "lucide-react"; 
 import { useNavigate } from "react-router-dom"; 
 import Logo from '../assets/Logo.png'
-import { disconnectSocket, connectSocket} from "../services/socket";
+import { getSocket } from "../services/socket";
+import { disconnectSocket } from "../services/socket";
+
+
 
 export default function DashboardAlumnos() {
     const navigate = useNavigate();
@@ -60,8 +63,8 @@ export default function DashboardAlumnos() {
 
     const handleLogout = () => {
         if(window.confirm("¿Cerrar sesión?")) {
-            disconnectSocket();
             localStorage.removeItem("authToken");
+            disconnectSocket();
             navigate("/"); 
         }
     };
@@ -148,10 +151,10 @@ export default function DashboardAlumnos() {
     }, [scheduleData, diaSeleccionado]);
 
     useEffect(() => {
-        const socket = connectSocket();
+        const socket = getSocket();
         if (!socket) return;
 
-        socket.on("schedule:updated", async (data) => {
+        const onScheduleUpdated = async (data) => {
             console.log("📅 Horario actualizado:", data);
 
             sendNotification(
@@ -159,7 +162,6 @@ export default function DashboardAlumnos() {
             "Tu horario ha sido actualizado por el administrador"
             );
 
-            // 🔄 RECARGAR HORARIO
             const token = localStorage.getItem("authToken");
             const decoded = parseJwt(token);
 
@@ -167,12 +169,14 @@ export default function DashboardAlumnos() {
             if (res.data?.data?.schedule) {
             setScheduleData(res.data.data.schedule);
             }
-        });
+        };
+
+        socket.on("schedule:updated", onScheduleUpdated);
 
         return () => {
-            disconnectSocket();
+            socket.off("schedule:updated", onScheduleUpdated);
         };
-    }, []);
+        }, []);
 
     let claseAVisualizar = null;
     let tituloTarjeta = "Actual";

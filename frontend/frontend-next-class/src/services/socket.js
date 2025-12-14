@@ -6,6 +6,7 @@ let socket = null;
  * Conecta el socket usando JWT
  */
 export const connectSocket = () => {
+  if (socket) return socket; // 🔒 ya existe
   const token = localStorage.getItem("authToken");
   if (!token) return null;
 
