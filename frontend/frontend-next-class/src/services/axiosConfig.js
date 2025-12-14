@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-    baseURL: "http://localhost:3000/api"
+    baseURL: "https://sour-dominica-next-class-8c248d0a.koyeb.app/api"
 });
 
 // INTERCEPTOR PARA AGREGAR TOKEN AUTOMÁTICAMENTE

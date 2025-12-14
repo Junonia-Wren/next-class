@@ -108,40 +108,38 @@ export default function DashboardAlumnos() {
                 if (!token) return navigate("/");
 
                 const decoded = parseJwt(token);
+                const res = await ScheduleService.getHorarioAlumno(decoded?.matricula);
 
-                if (navigator.onLine) {
-                    // 🟢 ONLINE → API
-                    const res = await ScheduleService.getHorarioAlumno(decoded?.matricula);
+                if (res.data?.data?.schedule) {
+                    setScheduleData(res.data.data.schedule);
+                    setAlumnoInfo({
+                    nombre: res.data.studentName,
+                    grupo: res.data.groupInfo?.name,
+                    });
 
-                    if (res.data?.data?.schedule) {
-                        setScheduleData(res.data.data.schedule);
-                        setAlumnoInfo({
-                            nombre: res.data.studentName,
-                            grupo: res.data.groupInfo?.name
-                        });
-
-                        // 👉 Guardar OFFLINE
-                        await saveScheduleOffline(res.data.data.schedule);
-                        saveAlumnoLocal(
-                            res.data.studentName,
-                            res.data.groupInfo?.name
-                        );
-                    }
-                } else {
-                    // 🔴 OFFLINE → IndexedDB + LocalStorage
-                    const offlineSchedule = await getScheduleOffline();
-                    const alumnoLocal = getAlumnoLocal();
-
-                    if (offlineSchedule) {
-                        setScheduleData(offlineSchedule);
-                        setAlumnoInfo(alumnoLocal);
-                    }
+                    await saveScheduleOffline(res.data.data.schedule);
+                    saveAlumnoLocal(
+                    res.data.studentName,
+                    res.data.groupInfo?.name
+                    );
                 }
-            } catch (error) {
-                console.error("Error cargando dashboard:", error);
-            } finally {
+
+                } catch (error) {
+                console.warn("🔴 API no disponible, usando datos offline");
+
+                const offlineSchedule = await getScheduleOffline();
+                const alumnoLocal = getAlumnoLocal();
+
+                if (offlineSchedule) {
+                    setScheduleData(offlineSchedule);
+                    setAlumnoInfo(alumnoLocal);
+                } else {
+                    console.warn("⚠️ No hay datos offline guardados");
+                }
+                }
+                finally {
                 setLoading(false);
-            }
+                }
         };
         init();
     }, []);
@@ -204,6 +202,7 @@ export default function DashboardAlumnos() {
     }, [scheduleData, diaSeleccionado]);
 
     useEffect(() => {
+        if (!navigator.onLine) return;
         let socket = getSocket();
       
         if (!socket) socket = connectSocket();
