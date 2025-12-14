@@ -2,10 +2,13 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-COPY package*.json ./
+# Copiamos SOLO backend/package.json
+COPY backend/package*.json ./
+
 RUN npm install
 
-COPY . .
+# Copiamos todo el backend
+COPY backend/ .
 
 EXPOSE 3000
 
