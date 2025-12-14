@@ -8,7 +8,8 @@ import { LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom"; 
 import Logo from '../assets/Logo.png'
 import { getSocket } from "../services/socket";
-import { disconnectSocket } from "../services/socket";
+import { disconnectSocket, connectSocket } from "../services/socket";
+
 
 
 
@@ -63,7 +64,7 @@ export default function DashboardAlumnos() {
 
     const handleLogout = () => {
         if(window.confirm("¿Cerrar sesión?")) {
-            localStorage.removeItem("authToken");
+            sessionStorage.removeItem("authToken");
             disconnectSocket();
             navigate("/"); 
         }
@@ -72,7 +73,7 @@ export default function DashboardAlumnos() {
     useEffect(() => {
         const init = async () => {
             try {
-                const token = localStorage.getItem("authToken");
+                const token = sessionStorage.getItem("authToken");
                 if (!token) return navigate("/");
                 const decoded = parseJwt(token);
                 
@@ -151,10 +152,11 @@ export default function DashboardAlumnos() {
     }, [scheduleData, diaSeleccionado]);
 
     useEffect(() => {
-        const socket = getSocket();
-        if (!socket) return;
+        let socket = getSocket();
+      
+        if (!socket) socket = connectSocket();
 
-        const onScheduleUpdated = async (data) => {
+        const onScheduleUpdated1 = async (data) => {
             console.log("📅 Horario actualizado:", data);
 
             sendNotification(
@@ -162,7 +164,7 @@ export default function DashboardAlumnos() {
             "Tu horario ha sido actualizado por el administrador"
             );
 
-            const token = localStorage.getItem("authToken");
+            const token = sessionStorage.getItem("authToken");
             const decoded = parseJwt(token);
 
             const res = await ScheduleService.getHorarioAlumno(decoded.matricula);
@@ -171,10 +173,10 @@ export default function DashboardAlumnos() {
             }
         };
 
-        socket.on("schedule:updated", onScheduleUpdated);
+        socket.on("schedule:updated", onScheduleUpdated1);
 
         return () => {
-            socket.off("schedule:updated", onScheduleUpdated);
+            socket.off("schedule:updated", onScheduleUpdated1);
         };
         }, []);
 

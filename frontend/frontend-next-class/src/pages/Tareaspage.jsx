@@ -25,7 +25,7 @@ export default function TareasPage() {
     useEffect(() => {
         const init = async () => {
             try {
-                const token = localStorage.getItem("authToken");
+                const token = sessionStorage.getItem("authToken");
                 if (token) {
                     const payload = parseJwt(token);
                     setEsJefe(payload.role === 'chief' || payload.role === 'admin');

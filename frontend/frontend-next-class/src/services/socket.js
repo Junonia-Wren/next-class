@@ -7,7 +7,7 @@ let socket = null;
  */
 export const connectSocket = () => {
   if (socket) return socket; // 🔒 ya existe
-  const token = localStorage.getItem("authToken");
+  const token = sessionStorage.getItem("authToken");
   if (!token) return null;
 
   socket = io("http://localhost:3000", {

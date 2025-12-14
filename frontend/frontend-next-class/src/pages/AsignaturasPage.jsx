@@ -22,7 +22,7 @@ export default function AsignaturasPage() {
     useEffect(() => {
         const init = async () => {
             try {
-                const token = localStorage.getItem("authToken");
+                const token = sessionStorage.getItem("authToken");
                 if (token) {
                     const payload = parseJwt(token);
                     if (payload.matricula) {
@@ -51,7 +51,7 @@ export default function AsignaturasPage() {
         const onScheduleUpdated = async (data) => {
             console.log("📅 Horario actualizado:",data);
             try {
-            const token = localStorage.getItem("authToken");
+            const token = sessionStorage.getItem("authToken");
             const payload = parseJwt(token);
             const res = await ScheduleService.getHorarioAlumno(payload.matricula);
 

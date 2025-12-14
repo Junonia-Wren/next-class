@@ -188,8 +188,8 @@ export default function AdminDashboard() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("authToken"); // Asegúrate de borrar la key correcta
-    localStorage.removeItem("user");      // Si guardas user
+    sessionStorage.removeItem("authToken"); // Asegúrate de borrar la key correcta
+    sessionStorage.removeItem("user");      // Si guardas user
     disconnectSocket();
     navigate("/");
   };
