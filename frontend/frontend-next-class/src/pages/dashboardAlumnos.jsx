@@ -7,6 +7,11 @@ import garra from "../assets/garra.png";
 import { LogOut } from "lucide-react"; 
 import { useNavigate } from "react-router-dom"; 
 import Logo from '../assets/Logo.png'
+import { getSocket } from "../services/socket";
+import { disconnectSocket, connectSocket } from "../services/socket";
+import { dbPromise } from "../storage/db";
+
+
 
 export default function DashboardAlumnos() {
     const navigate = useNavigate();
@@ -38,6 +43,37 @@ export default function DashboardAlumnos() {
         try { return JSON.parse(atob(token.split('.')[1])); } catch (e) { return null; }
     };
 
+    // ================================
+    // 📦 INDEXED DB - HORARIOS
+    // ================================
+
+    const saveScheduleOffline = async (schedule) => {
+        const db = await dbPromise;
+        await db.put("schedule", schedule, "current");
+    };
+
+    const getScheduleOffline = async () => {
+        const db = await dbPromise;
+        return await db.get("schedule", "current");
+    };
+
+    // ================================
+    // 💾 LOCAL STORAGE - INFO SIMPLE
+    // ================================
+
+    const saveAlumnoLocal = (nombre, grupo) => {
+        localStorage.setItem("alumnoNombre", nombre);
+        localStorage.setItem("alumnoGrupo", grupo);
+        localStorage.setItem("lastSync", new Date().toISOString());
+    };
+
+    const getAlumnoLocal = () => {
+        return {
+            nombre: localStorage.getItem("alumnoNombre") || "Alumno",
+            grupo: localStorage.getItem("alumnoGrupo") || ""
+        };
+    };
+
     // Permisos PWA
     useEffect(() => {
         if ("Notification" in window && Notification.permission !== "granted") {
@@ -59,7 +95,8 @@ export default function DashboardAlumnos() {
 
     const handleLogout = () => {
         if(window.confirm("¿Cerrar sesión?")) {
-            localStorage.removeItem("authToken");
+            sessionStorage.removeItem("authToken");
+            disconnectSocket();
             navigate("/"); 
         }
     };
@@ -67,23 +104,44 @@ export default function DashboardAlumnos() {
     useEffect(() => {
         const init = async () => {
             try {
-                const token = localStorage.getItem("authToken");
+                const token = sessionStorage.getItem("authToken");
                 if (!token) return navigate("/");
-                const decoded = parseJwt(token);
-                
-                const res = await ScheduleService.getHorarioAlumno(decoded?.matricula);
-                if (res.data) {
-                    if (res.data.data && res.data.data.schedule) setScheduleData(res.data.data.schedule);
-                    setAlumnoInfo({ nombre: res.data.studentName || "Alumno", grupo: res.data.groupInfo?.name || "" });
-                }
 
-                const resTareas = await TaskService.getByGrupo();
-                if(resTareas.data && resTareas.data.data) {
-                    const count = resTareas.data.data.length;
-                    setTareasCount(count);
-                    prevTareasCountRef.current = count;
+                const decoded = parseJwt(token);
+
+                if (navigator.onLine) {
+                    // 🟢 ONLINE → API
+                    const res = await ScheduleService.getHorarioAlumno(decoded?.matricula);
+
+                    if (res.data?.data?.schedule) {
+                        setScheduleData(res.data.data.schedule);
+                        setAlumnoInfo({
+                            nombre: res.data.studentName,
+                            grupo: res.data.groupInfo?.name
+                        });
+
+                        // 👉 Guardar OFFLINE
+                        await saveScheduleOffline(res.data.data.schedule);
+                        saveAlumnoLocal(
+                            res.data.studentName,
+                            res.data.groupInfo?.name
+                        );
+                    }
+                } else {
+                    // 🔴 OFFLINE → IndexedDB + LocalStorage
+                    const offlineSchedule = await getScheduleOffline();
+                    const alumnoLocal = getAlumnoLocal();
+
+                    if (offlineSchedule) {
+                        setScheduleData(offlineSchedule);
+                        setAlumnoInfo(alumnoLocal);
+                    }
                 }
-            } catch (error) { console.error(error); } finally { setLoading(false); }
+            } catch (error) {
+                console.error("Error cargando dashboard:", error);
+            } finally {
+                setLoading(false);
+            }
         };
         init();
     }, []);
@@ -144,6 +202,36 @@ export default function DashboardAlumnos() {
         const interval = setInterval(tick, 60000); 
         return () => clearInterval(interval);
     }, [scheduleData, diaSeleccionado]);
+
+    useEffect(() => {
+        let socket = getSocket();
+      
+        if (!socket) socket = connectSocket();
+
+        const onScheduleUpdated1 = async (data) => {
+            console.log("📅 Horario actualizado:", data);
+
+            sendNotification(
+            "Horario actualizado",
+            "Tu horario ha sido actualizado por el administrador"
+            );
+
+            const token = sessionStorage.getItem("authToken");
+            const decoded = parseJwt(token);
+
+            const res = await ScheduleService.getHorarioAlumno(decoded.matricula);
+            if (res.data?.data?.schedule) {
+            setScheduleData(res.data.data.schedule);
+            await saveScheduleOffline(res.data.data.schedule);
+            }
+        };
+
+        socket.on("schedule:updated", onScheduleUpdated1);
+
+        return () => {
+            socket.off("schedule:updated", onScheduleUpdated1);
+        };
+        }, []);
 
     let claseAVisualizar = null;
     let tituloTarjeta = "Actual";

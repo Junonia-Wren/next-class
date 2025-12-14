@@ -6,6 +6,7 @@ import TaskService from "../services/taskService";
 import ScheduleService from "../services/scheduleService";
 import garra from "../assets/garra.png";
 import { Plus, Trash2, CheckCircle, Circle, Book, Calendar as CalIcon } from "lucide-react";
+import { getSocket } from "../services/socket";
 
 export default function TareasPage() {
     const [esJefe, setEsJefe] = useState(false);
@@ -24,7 +25,7 @@ export default function TareasPage() {
     useEffect(() => {
         const init = async () => {
             try {
-                const token = localStorage.getItem("authToken");
+                const token = sessionStorage.getItem("authToken");
                 if (token) {
                     const payload = parseJwt(token);
                     setEsJefe(payload.role === 'chief' || payload.role === 'admin');
@@ -45,6 +46,22 @@ export default function TareasPage() {
         };
         init();
     }, []);
+
+    useEffect(() => {
+        const socket = getSocket();
+        if (!socket) return;
+
+        const onTaskUpdated = () => {
+            console.log("📌 Tareas actualizadas por WS");
+            loadTasks();
+        };
+
+        socket.on("task:updated", onTaskUpdated);
+
+        return () => {
+            socket.off("task:updated", onTaskUpdated);
+        };
+        }, []);
 
     const loadTasks = async () => {
         try {

@@ -55,21 +55,6 @@ const seedAll = async () => {
       "6A": grupos.find(g => g.name === "6A")
     };
 
-    // ========================
-    //   3️⃣ MATERIAS
-    // ========================
-    const materias = await Subject.insertMany([
-      { name: "Programación Web", groups: [G["5A"]._id, G["5B"]._id] },
-      { name: "Base de Datos", groups: [G["5A"]._id] },
-      { name: "Proyecto Integrador", groups: [G["6A"]._id] }
-    ]);
-    console.log(">> Materias creadas:", materias.length);
-
-    const M = {
-      PW: materias[0],
-      BD: materias[1],
-      PI: materias[2]
-    };
 
     // ========================
     //   4️⃣ PROFESORES
@@ -139,67 +124,6 @@ const seedAll = async () => {
       }
     ]);
     console.log(">> Alumnos creados:", alumnos.length);
-
-    // ========================
-    //   7️⃣ HORARIOS POR GRUPO
-    // ========================
-
-    const horarios = await Schedule.insertMany([
-      {
-        group: G["5A"]._id,
-        subject: M.PW._id,
-        teacher: P.WEB._id,
-        day: "Monday",
-        startTime: "08:00",
-        endTime: "09:00",
-        classroom: "Lab 1"
-      },
-      {
-        group: G["5A"]._id,
-        subject: M.BD._id,
-        teacher: P.BD._id,
-        day: "Tuesday",
-        startTime: "09:00",
-        endTime: "10:00",
-        classroom: "Lab 2"
-      },
-      {
-        group: G["6A"]._id,
-        subject: M.PI._id,
-        teacher: P.WEB._id,
-        day: "Monday",
-        startTime: "11:00",
-        endTime: "12:00",
-        classroom: "Sala PI"
-      }
-    ]);
-
-    console.log(">> Horarios creados:", horarios.length);
-
-    // ========================
-    //   8️⃣ TAREAS DEMO
-    // ========================
-
-    const tareas = await Task.insertMany([
-      {
-        title: "Tarea 1 PW",
-        description: "Resolver ejercicios HTML",
-        dueDate: "2025-12-20",
-        subject: M.PW._id,
-        group: G["5A"]._id,
-        createdBy: jefes[0]._id
-      },
-      {
-        title: "Tarea 1 PI",
-        description: "Preparar exposición",
-        dueDate: "2025-12-22",
-        subject: M.PI._id,
-        group: G["6A"]._id,
-        createdBy: jefes[1]._id
-      }
-    ]);
-
-    console.log(">> Tareas demo creadas:", tareas.length);
 
     console.log("\n🌱 SEED COMPLETADO CORRECTAMENTE 🌱");
     process.exit(0);

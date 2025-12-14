@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import BottomNav from "../components/BottomNav";
 import ScheduleService from "../services/scheduleService";
 import garra from "../assets/garra.png";
+import { getSocket } from "../services/socket";
 import { ArrowLeft, BookOpen, User, Percent, FileText, Calendar } from "lucide-react";
 
 // Placeholder por si no hay foto
@@ -21,7 +22,7 @@ export default function AsignaturasPage() {
     useEffect(() => {
         const init = async () => {
             try {
-                const token = localStorage.getItem("authToken");
+                const token = sessionStorage.getItem("authToken");
                 if (token) {
                     const payload = parseJwt(token);
                     if (payload.matricula) {
@@ -42,6 +43,34 @@ export default function AsignaturasPage() {
         };
         init();
     }, []);
+
+    useEffect(() => {
+        const socket = getSocket();
+        if (!socket) return;
+
+        const onScheduleUpdated = async (data) => {
+            console.log("📅 Horario actualizado:",data);
+            try {
+            const token = sessionStorage.getItem("authToken");
+            const payload = parseJwt(token);
+            const res = await ScheduleService.getHorarioAlumno(payload.matricula);
+
+            if (res.data?.data?.schedule) {
+                const materiasUnicas = extraerMateriasUnicas(res.data.data.schedule);
+                setMaterias(materiasUnicas);
+            }
+            } catch (e) {
+            console.error("Error recargando asignaturas", e);
+            }
+        };
+
+        socket.on("schedule:updated", onScheduleUpdated);
+
+        return () => {
+            socket.off("schedule:updated", onScheduleUpdated);
+        };
+        }, []);
+
 
     const extraerMateriasUnicas = (scheduleMatrix) => {
         const map = new Map();

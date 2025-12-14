@@ -2,6 +2,7 @@ import taskDaos from "../daos/task.daos.js";
 import Group from "../models/group.model.js";
 import Activity from "../models/activity.model.js";
 import User from "../models/user.model.js"; // <--- IMPORTANTE: Necesitamos el modelo de usuario
+import { io } from "../index.js";
 
 const taskControllers = {};
 
@@ -58,60 +59,81 @@ taskControllers.markCompleted = async (req, res) => {
 
 // CREAR TAREA + REGISTRO DE ACTIVIDAD CON NOMBRE
 taskControllers.insertOne = async (req, res) => {
-    try {
-        const { title, description, dueDate, subject } = req.body;
-        const userId = req.user.uid;
+  try {
+    const { title, description, dueDate, subject } = req.body;
+    const userId = req.user.uid;
 
-        // 1. Buscar al Usuario para obtener su nombre
-        const user = await User.findById(userId);
-        if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
 
-        // 2. Buscar el Grupo
-        const group = await Group.findOne({ students: userId });
-        if (!group) return res.status(400).json({ message: "No tienes grupo asignado" });
+    const group = await Group.findOne({ students: userId });
+    if (!group) return res.status(400).json({ message: "No tienes grupo asignado" });
 
-        const newTaskData = {
-            title,
-            description,
-            dueDate,
-            subject,
-            group: group._id,
-            createdBy: userId
-        };
+    const newTask = await taskDaos.create({
+      title,
+      description,
+      dueDate,
+      subject,
+      group: group._id,
+      createdBy: userId
+    });
 
-        // 3. Crear la Tarea
-        const newTask = await taskDaos.create(newTaskData);
+    await Activity.create({
+      type: 'TAREA',
+      message: `Tarea creada: "${title}" por: ${user.name}`
+    });
 
-        // 4. Registrar Actividad (Ahora con el nombre del usuario)
-        await Activity.create({
-            type: 'TAREA',
-            message: `Tarea creada: "${title}" por: ${user.name}` // <--- AQUÍ ESTÁ EL CAMBIO
-        });
+    // 🔔 EMITIR EVENTO AL GRUPO
+    io.to(`group:${group.name}`).emit("task:updated", {
+      action: "created",
+      group: group.name
+    });
 
-        res.status(201).json({ message: "Tarea creada", data: newTask });
+    res.status(201).json({ message: "Tarea creada", data: newTask });
 
-    } catch (error) {
-        console.error("Error creating task:", error);
-        res.status(500).json({ message: "Error al crear tarea", error: error.message });
-    }
+  } catch (error) {
+    res.status(500).json({ message: "Error al crear tarea", error: error.message });
+  }
 };
 
 taskControllers.updateOne = async (req, res) => {
-    try {
-        const updated = await taskDaos.update(req.params.task_id, req.body);
-        res.json({ message: "Tarea actualizada", data: updated });
-    } catch (error) {
-        res.status(500).json({ message: "Error al actualizar", error: error.message });
-    }
+  try {
+    const updated = await taskDaos.update(req.params.task_id, req.body);
+
+    // Obtener grupo
+    const group = await Group.findById(updated.group);
+
+    io.to(`group:${group.name}`).emit("task:updated", {
+      action: "updated",
+      group: group.name
+    });
+
+    res.json({ message: "Tarea actualizada", data: updated });
+
+  } catch (error) {
+    res.status(500).json({ message: "Error al actualizar", error: error.message });
+  }
 };
 
 taskControllers.deleteOne = async (req, res) => {
-    try {
-        await taskDaos.delete(req.params.task_id);
-        res.json({ message: "Tarea eliminada" });
-    } catch (error) {
-        res.status(500).json({ message: "Error al eliminar", error: error.message });
-    }
+  try {
+    const task = await taskDaos.getOne(req.params.task_id);
+    if (!task) return res.status(404).json({ message: "No encontrada" });
+
+    const group = await Group.findById(task.group);
+
+    await taskDaos.delete(req.params.task_id);
+
+    io.to(`group:${group.name}`).emit("task:updated", {
+      action: "deleted",
+      group: group.name
+    });
+
+    res.json({ message: "Tarea eliminada" });
+
+  } catch (error) {
+    res.status(500).json({ message: "Error al eliminar", error: error.message });
+  }
 };
 
 export default taskControllers;

@@ -35,7 +35,7 @@ function LoginForm() {
 
         try {
             const res = await api.post("/auth/login", formData);
-            localStorage.setItem("authToken", res.data.token);
+            sessionStorage.setItem("authToken", res.data.token);
 
             if (res.data.role === "admin") {
                 return navigate("/panelControlAdmin");

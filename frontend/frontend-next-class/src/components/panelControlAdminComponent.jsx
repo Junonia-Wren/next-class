@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { connectSocket, disconnectSocket } from "../services/socket";
 import {
   Home,
   GraduationCap,
@@ -158,6 +159,24 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const socket = connectSocket();
+
+    if (!socket) return;
+
+    // Escuchar actividad en tiempo real (admins)
+    socket.on("activity:new", (data) => {
+      console.log("Actividad nueva:", data);
+
+      // Puedes actualizar el estado aquí
+      // setActivities(prev => [data, ...prev]);
+    });
+
+    return () => {
+      disconnectSocket();
+    };
+  }, []);
+
   // CONFIGURACIÓN DE COLORES
   const colors = {
     primary: "#00B8C8",
@@ -169,8 +188,9 @@ export default function AdminDashboard() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("authToken"); // Asegúrate de borrar la key correcta
-    localStorage.removeItem("user");      // Si guardas user
+    sessionStorage.removeItem("authToken"); // Asegúrate de borrar la key correcta
+    sessionStorage.removeItem("user");      // Si guardas user
+    disconnectSocket();
     navigate("/");
   };
 
