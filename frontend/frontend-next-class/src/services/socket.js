@@ -10,7 +10,7 @@ export const connectSocket = () => {
   const token = sessionStorage.getItem("authToken");
   if (!token) return null;
 
-  socket = io("http://localhost:3000", {
+  socket = io("https://sour-dominica-next-class-8c248d0a.koyeb.app", {
     auth: {
       token: token, // 👈 se envía al handshake
     },
